@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# local JSON store (re-seeded on first run)
+data/
+
+# design-skill working files
+.hallmark/
