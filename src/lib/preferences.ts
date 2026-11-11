@@ -6,26 +6,14 @@ import type { PitchKind } from "./types";
  * the same lists and apply the same checks.
  */
 
-/** The three kinds of giving. A letter's kind is chosen by its writer. */
-export const KINDS: { id: PitchKind; title: string; plural: string; blurb: string }[] = [
-  {
-    id: "story",
-    title: "A person",
-    plural: "People",
-    blurb: "Someone’s own situation: a fee, a tool, one gap between them and the next step.",
-  },
-  {
-    id: "project",
-    title: "A project",
-    plural: "Projects",
-    blurb: "Something being built that needs parts, time or a first real run.",
-  },
-  {
-    id: "opinion",
-    title: "An argument",
-    plural: "Arguments",
-    blurb: "A case someone wants to make or test, and what it costs to make it.",
-  },
+/**
+ * The headings recommendations are grouped under. A letter's kind is chosen by
+ * its writer and never decides whether the letter is read.
+ */
+export const KINDS: { id: PitchKind; plural: string }[] = [
+  { id: "story", plural: "People" },
+  { id: "project", plural: "Projects" },
+  { id: "opinion", plural: "Arguments" },
 ];
 
 /**
@@ -77,7 +65,6 @@ export const STYLE_LABEL: Record<GivingStyle, string> = {
 };
 
 export interface Preferences {
-  kinds: PitchKind[];
   causes: CauseId[];
   /** Optional, in the patron's own words: what else should be true of a letter. */
   note: string;
@@ -96,9 +83,7 @@ const amount = (value: unknown): number => Math.round(Number(value) * 100) / 100
 export function parsePreferences(raw: unknown): Preferences | string {
   const body = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
 
-  const wantedKinds = strings(body.kinds);
   const wantedCauses = strings(body.causes);
-  const kinds = KINDS.map((k) => k.id).filter((id) => wantedKinds.includes(id));
   const causes = CAUSES.map((c) => c.id).filter((id) => wantedCauses.includes(id));
   const note = typeof body.note === "string" ? body.note.trim().slice(0, 600) : "";
   const style: GivingStyle = body.style === "spread" ? "spread" : "complete";
@@ -106,7 +91,6 @@ export function parsePreferences(raw: unknown): Preferences | string {
   const perGiftCapUsd = amount(body.perGiftCapUsd);
   const patronName = typeof body.patronName === "string" ? body.patronName.trim().slice(0, 80) : "";
 
-  if (kinds.length === 0) return "Choose at least one kind of giving.";
   if (causes.length === 0 && note.length < 12) {
     return "Choose at least one cause, or say in a sentence what you look for.";
   }
@@ -115,8 +99,7 @@ export function parsePreferences(raw: unknown): Preferences | string {
     return "The most for one letter must be at least $1 and no more than the budget.";
   }
 
-  return { kinds, causes, note, style, budgetUsd, perGiftCapUsd, patronName };
+  return { causes, note, style, budgetUsd, perGiftCapUsd, patronName };
 }
 
 export const causeById = (id: CauseId): Cause => CAUSES.find((c) => c.id === id)!;
-export const kindById = (id: PitchKind) => KINDS.find((k) => k.id === id)!;

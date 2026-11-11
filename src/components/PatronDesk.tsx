@@ -14,7 +14,7 @@ import {
   type GivingStyle,
   type Preferences,
 } from "@/lib/preferences";
-import type { Gift, PitchKind, Proposal } from "@/lib/types";
+import type { Gift, Proposal } from "@/lib/types";
 import { PayPalButton } from "./PayPalButton";
 import { loadPreferences, savePreferences, saveReadings } from "./patronStore";
 
@@ -29,7 +29,6 @@ interface Row {
 
 /** The form's own state: amounts stay text while they are being typed. */
 interface Draft {
-  kinds: PitchKind[];
   causes: CauseId[];
   note: string;
   style: GivingStyle;
@@ -38,10 +37,9 @@ interface Draft {
   patronName: string;
 }
 
-const BLANK: Draft = { kinds: [], causes: [], note: "", style: "complete", budget: "500", cap: "200", patronName: "" };
+const BLANK: Draft = { causes: [], note: "", style: "complete", budget: "500", cap: "200", patronName: "" };
 
 const EXAMPLE: Draft = {
-  kinds: ["story"],
   causes: ["education", "livelihood"],
   note: "One specific purchase away from earning more, with a price on each item.",
   style: "complete",
@@ -51,7 +49,6 @@ const EXAMPLE: Draft = {
 };
 
 const toDraft = (p: Preferences): Draft => ({
-  kinds: p.kinds,
   causes: p.causes,
   note: p.note,
   style: p.style,
@@ -66,7 +63,7 @@ const toggle = <T,>(list: T[], item: T): T[] => (list.includes(item) ? list.filt
 const percent = (p: number) => `${Math.round(p * 100)}%`;
 const digits = (text: string) => text.replace(/[^0-9]/g, "");
 
-export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, number> }) {
+export function PatronDesk() {
   const [mode, setMode] = useState<"loading" | "edit" | "saved">("loading");
   const [draft, setDraft] = useState<Draft>(BLANK);
   const [saved, setSaved] = useState<Preferences | null>(null);
@@ -212,33 +209,12 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
               Set your preferences here and they stay in this browser. Each time you come back, an agent reads the open
               letters against them and recommends gifts. It cannot pay; only you can, one PayPal approval at a time.
             </p>
-            {draft.kinds.length === 0 && draft.causes.length === 0 && !draft.note && (
+            {draft.causes.length === 0 && !draft.note && (
               <button type="button" className="linklike small" onClick={() => setDraft(EXAMPLE)}>
                 Fill in an example
               </button>
             )}
           </div>
-
-          <fieldset className="fieldset">
-            <legend>What kind of giving?</legend>
-            <div className="choices">
-              {KINDS.map((kind) => (
-                <label className="choice" key={kind.id}>
-                  <input
-                    type="checkbox"
-                    checked={draft.kinds.includes(kind.id)}
-                    onChange={() => setDraft((d) => ({ ...d, kinds: toggle(d.kinds, kind.id) }))}
-                  />
-                  <span className="choice__title">{kind.title}</span>
-                  <span className="choice__blurb">{kind.blurb}</span>
-                  <span className="choice__count figure">
-                    {openByKind[kind.id]} open {openByKind[kind.id] === 1 ? "letter" : "letters"}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <span className="field__hint">Letters of a kind you leave out are not read at all.</span>
-          </fieldset>
 
           <fieldset className="fieldset">
             <legend>Which causes?</legend>
@@ -363,9 +339,9 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
           <h2>What happens with these</h2>
           <ol>
             <li>They are kept in this browser. Kindling has no accounts, so there is nothing to sign up for.</li>
-            <li>The kind of giving is a plain filter. Letters of other kinds are never sent to a model.</li>
             <li>
-              For the rest, Jev answers one yes-or-no question per cause with a probability. It writes nothing and
+              Every open letter is read, whatever its writer filed it under. For each one Jev answers one yes-or-no
+              question per cause with a probability. It writes nothing and
               chooses no amounts.
             </li>
             <li>
@@ -398,10 +374,6 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
         <div className="till">
           <span className="label">Your standing preferences</span>
           <dl className="prefs">
-            <div>
-              <dt>Giving to</dt>
-              <dd>{KINDS.filter((k) => saved.kinds.includes(k.id)).map((k) => k.title).join(", ")}</dd>
-            </div>
             {saved.causes.length > 0 && (
               <div>
                 <dt>Causes</dt>
@@ -478,9 +450,11 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
           </ul>
         )}
 
-        {KINDS.filter((kind) => saved.kinds.includes(kind.id)).map((kind) => {
+        {done && rows.length === 0 && !error && <p className="quiet">Nothing is recommended this round.</p>}
+
+        {KINDS.map((kind) => {
           const group = rows.filter((row) => row.pitch.kind === kind.id);
-          if (group.length === 0 && !done) return null;
+          if (group.length === 0) return null;
           return (
             <div key={kind.id}>
               <h2 className="section-title section-title--count">
@@ -489,12 +463,7 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
                   {group.length} recommended
                 </span>
               </h2>
-              {group.length === 0 ? (
-                <p className="quiet" style={{ marginTop: "var(--space-sm)" }}>
-                  Nothing under this heading this round.
-                </p>
-              ) : (
-                <ol className="proposals">
+              <ol className="proposals">
                   {group.map((row) => {
                     const status = row.gift ? "paid" : row.proposal.status;
                     return (
@@ -570,8 +539,7 @@ export function PatronDesk({ openByKind }: { openByKind: Record<PitchKind, numbe
                       </li>
                     );
                   })}
-                </ol>
-              )}
+              </ol>
             </div>
           );
         })}

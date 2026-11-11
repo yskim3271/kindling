@@ -8,9 +8,8 @@ import type { Mandate, Pitch, Proposal } from "./types";
 /**
  * The patron's agent.
  *
- * The patron's preferences decide what is read: letters of a kind they did not
- * choose are never sent anywhere. For the rest, Jev makes the judgments: is
- * this request about a cause the patron picked, does it meet what they wrote in
+ * Every open letter is read against the patron's preferences. Jev makes the
+ * judgments: is this request about a cause the patron picked, does it meet what they wrote in
  * their own words, can its claims be checked, is it trying to instruct the
  * software, which sentence shows the fit. Each comes back as a probability.
  * Everything after that is ordinary code: which letters qualify, in what order,
@@ -143,15 +142,13 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
     emit({ type: "done", mandateId: mandate.id, summary: note, readings });
   };
 
-  // The kind of giving is the patron's own choice, so it is a plain filter.
-  const open = (await listPitches()).filter((p) => stillNeeded(p) >= 1);
-  const chosen = open.filter((p) => mandate.kinds.includes(p.kind)).slice(0, 40);
+  const open = (await listPitches()).filter((p) => stillNeeded(p) >= 1).slice(0, 40);
   emit({
     type: "step",
-    text: `Opening the letterbox: ${open.length} ${open.length === 1 ? "letter needs" : "letters need"} funding, ${chosen.length} of the kinds you chose`,
+    text: `Opening the letterbox: ${open.length} ${open.length === 1 ? "letter needs" : "letters need"} funding`,
   });
-  if (chosen.length === 0) {
-    await finish("No open letter is of a kind you chose. Nothing was read and nothing is recommended.", []);
+  if (open.length === 0) {
+    await finish("No letter needs funding right now. Nothing was read and nothing is recommended.", []);
     return;
   }
 
@@ -163,7 +160,7 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
       : "You are happy to spread gifts: part-funding is allowed",
   });
 
-  const readings = await mapLimited(chosen, 4, async (pitch) => {
+  const readings = await mapLimited(open, 4, async (pitch) => {
     const reading = await readLetter(mandate, pitch);
     emit({ type: "step", text: `Read ${pitch.author}, ${pitch.location}: fit ${percent(reading.fit)}` });
     return reading;
@@ -214,9 +211,8 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
   const hint = nearMiss
     ? ` A cap of ${money(stillNeeded(nearMiss.pitch))} per letter would complete ${nearMiss.pitch.author}’s ask.`
     : "";
-  const skippedByKind = open.length - chosen.length;
   const note = [
-    `Read ${readings.length} ${readings.length === 1 ? "letter" : "letters"} of the kinds you chose${skippedByKind > 0 ? `, and left ${skippedByKind} of other kinds unread` : ""}. ${fitting.length} fit your preferences, and ${proposed.length} ${proposed.length === 1 ? "gift is" : "gifts are"} recommended for ${money(cents(mandate.budgetUsd - remaining))} of your ${money(mandate.budgetUsd)}. ${money(remaining)} is left unspent.`,
+    `Read ${readings.length} ${readings.length === 1 ? "letter" : "letters"}. ${fitting.length} fit your preferences, and ${proposed.length} ${proposed.length === 1 ? "gift is" : "gifts are"} recommended for ${money(cents(mandate.budgetUsd - remaining))} of your ${money(mandate.budgetUsd)}. ${money(remaining)} is left unspent.`,
     tooLarge.length > 0
       ? `Fit, but no gift recommended: ${names(tooLarge)}. ${completeOnly ? "Their asks cannot be completed within your cap and what is left of the budget, and you prefer finishing an ask." : "None of their listed items fits within your cap and what is left of the budget."}${hint}`
       : "",

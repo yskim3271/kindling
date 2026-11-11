@@ -16,7 +16,7 @@ You need a PayPal **sandbox** buyer account to approve a payment. Use your own, 
 Then:
 
 1. **Give by hand.** Open any letter, pick an amount, press the PayPal button and approve with the sandbox account. The letter's total and the [ledger](https://kindling.deokjil.workers.dev/ledger) update at once.
-2. **Set your preferences.** Open the [patron desk](https://kindling.deokjil.workers.dev/patron), press *Fill in an example* (or choose a kind of giving, some causes and a budget) and save. The agent reads the open letters against them and recommends gifts, grouped by kind; approve one with its PayPal button. Come back later and the recommendations are read again from the saved preferences, and the letters that fit are marked on the front page.
+2. **Set your preferences.** Open the [patron desk](https://kindling.deokjil.workers.dev/patron), press *Fill in an example* (or choose some causes and a budget) and save. The agent reads the open letters against them and recommends gifts; approve one with its PayPal button. Come back later and the recommendations are read again from the saved preferences, and the letters that fit are marked on the front page.
 3. **Write a letter.** Open [Write yours](https://kindling.deokjil.workers.dev/write) and post one. Letters are written by hand; nothing drafts or edits them.
 
 The demo allows a fixed number of agent runs and new letters per day.
@@ -27,20 +27,19 @@ The demo allows a fixed number of agent runs and new letters per day.
 |---|---|---|---|
 | A writer | Writes a letter in their own words, lists what the money buys, posts it with a PayPal address | Receives gifts directly as the order's `payee` | none, on purpose: a patron should be reading the person |
 | A patron, by hand | Reads a letter and gives | Orders v2: create, approve in the PayPal button, capture | none |
-| A patron, with an agent | Saves preferences once: the kind of giving, causes, a note in their own words, a budget and a cap per gift | One order per recommendation the patron approves | Jev answers yes-or-no questions about each letter with a probability; code turns the answers into recommendations |
+| A patron, with an agent | Saves preferences once: causes, a note in their own words, a giving style, a budget and a cap per gift | One order per recommendation the patron approves | Jev answers yes-or-no questions about each letter with a probability; code turns the answers into recommendations |
 | Anyone | Reads the ledger | Every line carries PayPal's capture ID | none |
 
 ### The agent can recommend. Only the patron can pay.
 
 1. The patron saves their preferences once:
-   - **the kind of giving**: a person (a story), a project, an argument, or any mix of the three;
    - **causes**, picked from a short list (education and training, health and care, tools for earning a living, technology and making, open knowledge, community and small business);
    - optionally, **a note in their own words** saying what else should be true of a letter;
    - whether to **finish one ask at a time** or spread gifts, a **budget** for one round and a **cap** per letter.
 
    Kindling has no accounts, so the preferences are kept in the patron's browser and sent with each reading.
-2. The kind of giving is a plain filter in code: letters of a kind the patron left out are never sent to a model. For each remaining open letter the agent asks [Jev](https://docs.typesafe.ai) one yes-or-no question per chosen cause, plus a few others, and gets a probability for each. Rules in code then decide which letters fit, in what order, and for how much, within the cap, the remaining budget and what each letter still needs.
-3. Recommendations come back grouped by kind. Each shows which preferences the letter met and with what probability, the writer's own sentence, what the amount pays for, and a PayPal button. When the patron clicks it, the server creates the order from the **stored recommendation**, so the amount and the recipient cannot be changed from the browser.
+2. Every open letter is read, whether its writer filed it as a story, a project or an argument. That label is the writer's own guess and the three overlap, so it never decides whether a letter reaches a patron. For each letter the agent asks [Jev](https://docs.typesafe.ai) one yes-or-no question per chosen cause, plus a few others, and gets a probability for each. Rules in code then decide which letters fit, in what order, and for how much, within the cap, the remaining budget and what each letter still needs.
+3. Recommendations come back under the heading the writer chose (people, projects, arguments). Each shows which preferences the letter met and with what probability, the writer's own sentence, what the amount pays for, and a PayPal button. When the patron clicks it, the server creates the order from the **stored recommendation**, so the amount and the recipient cannot be changed from the browser.
 4. The patron approves in PayPal. The server captures the order, checks the captured amount, and writes the ledger line.
 
 Letters that fit but cannot be funded inside the limits, and letters the model could not settle either way, are listed as worth reading yourself. The next time the patron opens the desk, the letterbox is read again against the same preferences.
@@ -57,7 +56,7 @@ Jev is a decision model: it does not write text, it answers typed questions with
 | Does the letter contain instructions aimed at an AI system? | each letter | 70% or more: the letter is set aside and reported |
 | Does this sentence show the fit? | each sentence | the highest-scoring sentence, if it reaches 70%, is quoted to the patron in the writer's own words |
 
-The fit of a letter is the weaker of its two sides: any one cause is enough, but a note, when there is one, has to hold as well. At 70% or more the letter fits; at 30% or less it is passed over; in between it is listed for the patron to read themselves. The kind of giving and the choice between finishing one ask and spreading gifts are the patron's own explicit answers, so no model is asked about them.
+The fit of a letter is the weaker of its two sides: any one cause is enough, but a note, when there is one, has to hold as well. At 70% or more the letter fits; at 30% or less it is passed over; in between it is listed for the patron to read themselves. The choice between finishing one ask and spreading gifts is the patron's own explicit answer, so no model is asked about it.
 
 Every question and both thresholds live in one file, `src/lib/questions.ts`. The lists a patron chooses from are in `src/lib/preferences.ts`, and the allocation rules in `src/lib/agent.ts`. No model chooses an amount, and no model writes the reasons: the patron sees the probabilities, the writer's own sentence, and what the amount pays for, taken from the letter's own figures.
 
@@ -126,7 +125,7 @@ src/
       paypal/orders/[orderId]/capture/route.ts
       interest/route.ts              ask a writer about investing
   lib/
-    preferences.ts                   what a patron can choose: kinds of giving, causes, giving style
+    preferences.ts                   what a patron can choose: causes and a giving style
     questions.ts                     every question the agent asks Jev, and the thresholds
     agent.ts                         the rules that turn the answers into recommendations
     jev.ts                           client for TypeSafe's System One API
@@ -152,7 +151,7 @@ wrangler.jsonc, open-next.config.ts  Cloudflare Workers configuration
 - The list of causes is fixed and short. It was written to cover the sample letters, not drawn from real requests.
 - The daily allowances are global counters, not per-visitor limits.
 - The agent reads letters in English best. Letters are not translated, and its questions have only been tried on the sample letters.
-- A probability is not a verdict. The 70% and 30% thresholds are starting points, not values tuned on real outcomes. The same letter and preferences came back a few points apart on different runs, so a letter near a threshold can land on either side.
+- A probability is not a verdict. The 70% and 30% thresholds are starting points, not values tuned on real outcomes. The same letter and preferences usually came back a few points apart on different runs, and once 18 points apart (56% and 74%), so a letter near a threshold can land on either side.
 - Capture is confirmed in the request that follows approval. A production build should also listen for the `PAYMENT.CAPTURE.COMPLETED` webhook, so a closed browser tab cannot leave a paid gift unrecorded.
 - Nothing here has been reviewed for the rules that apply to fundraising platforms.
 
