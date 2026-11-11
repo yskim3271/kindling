@@ -3,7 +3,7 @@ import { Bricolage_Grotesque, IBM_Plex_Mono, Newsreader } from "next/font/google
 import Link from "next/link";
 import { MastheadNav } from "@/components/MastheadNav";
 import { longDate } from "@/lib/format";
-import { PAYPAL_ENV } from "@/lib/paypal";
+import { paypalEnv } from "@/lib/paypal";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--ff-display" });
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="masthead wrap">
           <div className="masthead__strip label">
             <span>{longDate(Date.now())}</span>
-            <span>{PAYPAL_ENV === "sandbox" ? "Sandbox edition · no real money moves" : "Live payments"}</span>
+            <span>{paypalEnv() === "sandbox" ? "Sandbox edition · no real money moves" : "Live payments"}</span>
           </div>
           <Link href="/" className="masthead__mark">
             Kindling

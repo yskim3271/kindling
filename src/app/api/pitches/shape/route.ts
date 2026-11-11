@@ -1,4 +1,5 @@
 import { shapePitch } from "@/lib/ai";
+import { withinDailyLimit } from "@/lib/db";
 import { describeError, fail, num, readJson, str } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -10,6 +11,9 @@ export async function POST(req: Request) {
   if (draft.length < 80) return fail("Write a little more first. A few sentences is enough for the editor to work with.");
 
   const ask = num(body?.askUsd);
+  if (!(await withinDailyLimit("editor", 40))) {
+    return fail("The editor has read all it can for today. Come back tomorrow.", 429);
+  }
   try {
     const shaped = await shapePitch({ draft, askUsd: ask > 0 ? Math.round(ask) : undefined });
     return Response.json({ shaped });

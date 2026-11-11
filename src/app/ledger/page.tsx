@@ -5,9 +5,9 @@ import { longDate, money } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Ledger" };
 
-export default function LedgerPage() {
-  const pitches = new Map(listPitches().map((p) => [p.id, p]));
-  const gifts = listGifts().filter((g) => g.status === "captured");
+export default async function LedgerPage() {
+  const pitches = new Map((await listPitches()).map((p) => [p.id, p]));
+  const gifts = (await listGifts()).filter((g) => g.status === "captured");
   const total = gifts.reduce((sum, g) => sum + g.amountUsd, 0);
 
   return (

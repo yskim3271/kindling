@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const proposalId = str(body.proposalId, 60) || undefined;
 
   if (mandateId || proposalId) {
-    const mandate = mandateId ? getMandate(mandateId) : undefined;
+    const mandate = mandateId ? await getMandate(mandateId) : undefined;
     const proposal = mandate?.proposals.find((p) => p.id === proposalId);
     if (!mandate || !proposal) return fail("That proposal no longer exists.", 404);
     if (proposal.status === "paid") return fail("That proposal has already been paid.", 409);
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     patronName = mandate.patronName;
   }
 
-  const pitch = getPitch(pitchId);
+  const pitch = await getPitch(pitchId);
   if (!pitch) return fail("That letter no longer exists.", 404);
   if (!(amountUsd >= 1 && amountUsd <= 10_000)) return fail("Gifts can be between $1 and $10,000.");
 
@@ -53,14 +53,14 @@ export async function POST(req: Request) {
     payee: paysWriterDirectly(pitch) ? "writer" : "platform",
     createdAt: new Date().toISOString(),
   };
-  addGift(gift);
+  await addGift(gift);
 
   try {
     const { orderId } = await createOrder(gift, pitch);
-    patchGift(gift.id, { orderId });
+    await patchGift(gift.id, { orderId });
     return Response.json({ orderId, giftId: gift.id });
   } catch (err) {
-    patchGift(gift.id, { status: "failed" });
+    await patchGift(gift.id, { status: "failed" });
     const { message, status, issue } = describeError(err);
     return fail(message, status, { issue });
   }

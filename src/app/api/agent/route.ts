@@ -1,5 +1,5 @@
 import { runPatronAgent, type AgentEvent } from "@/lib/ai";
-import { addMandate, newId } from "@/lib/db";
+import { addMandate, newId, withinDailyLimit } from "@/lib/db";
 import { cents } from "@/lib/format";
 import { describeError, fail, num, readJson, str } from "@/lib/http";
 import type { Mandate } from "@/lib/types";
@@ -30,7 +30,10 @@ export async function POST(req: Request) {
     proposals: [],
     createdAt: new Date().toISOString(),
   };
-  addMandate(mandate);
+  if (!(await withinDailyLimit("agent", 30))) {
+    return fail("The agent has done all the reading it can for today. Come back tomorrow.", 429);
+  }
+  await addMandate(mandate);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({

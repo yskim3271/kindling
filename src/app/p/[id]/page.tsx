@@ -10,20 +10,20 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
-  const pitch = getPitch(id);
+  const pitch = await getPitch(id);
   return pitch ? { title: pitch.headline, description: pitch.summary } : { title: "Letter not found" };
 }
 
 export default async function LetterPage({ params }: Params) {
   const { id } = await params;
-  const pitch = getPitch(id);
+  const pitch = await getPitch(id);
   if (!pitch) notFound();
 
-  const gifts = listGifts().filter((g) => g.pitchId === pitch.id && g.status === "captured");
+  const gifts = (await listGifts()).filter((g) => g.pitchId === pitch.id && g.status === "captured");
   const stillNeeded = Math.max(0, cents(pitch.askUsd - pitch.raisedUsd));
   const progress = Math.min(100, Math.round((pitch.raisedUsd / pitch.askUsd) * 100));
   const linesTotal = pitch.useOfFunds.reduce((sum, line) => sum + line.amountUsd, 0);
-  const interest = pitch.openToInvestment ? countInterest(pitch.id) : 0;
+  const interest = pitch.openToInvestment ? await countInterest(pitch.id) : 0;
 
   return (
     <div className="letter wrap">

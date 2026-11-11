@@ -1,4 +1,4 @@
-import { addPitch, getPitch, newId } from "@/lib/db";
+import { addPitch, getPitch, newId, withinDailyLimit } from "@/lib/db";
 import { slugify } from "@/lib/format";
 import { fail, isEmail, num, readJson, str } from "@/lib/http";
 import type { FundLine, Pitch, PitchKind } from "@/lib/types";
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const translated = Boolean(language && language.toLowerCase() !== "english" && originalBody);
 
   let id = slugify(`${author} ${headline}`) || newId("letter");
-  if (getPitch(id)) id = `${id}-${newId("x").slice(2, 8)}`;
+  if (await getPitch(id)) id = `${id}-${newId("x").slice(2, 8)}`;
 
   const pitch: Pitch = {
     id,
@@ -64,6 +64,9 @@ export async function POST(req: Request) {
     sample: false,
     createdAt: new Date().toISOString(),
   };
-  addPitch(pitch);
+  if (!(await withinDailyLimit("letters", 40))) {
+    return fail("The letterbox has taken all the letters it can for today. Come back tomorrow.", 429);
+  }
+  await addPitch(pitch);
   return Response.json({ id: pitch.id }, { status: 201 });
 }

@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat, betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
-import { getMandate, getPitch, listPitches, newId, patchMandate } from "./db";
+import { addProposal, getMandate, getPitch, listPitches, newId, setMandateSummary } from "./db";
 import { cents } from "./format";
 import type { Mandate, Pitch, Proposal } from "./types";
 
-const client = new Anthropic();
+// Built on first use so the API key is read at request time, wherever the app is hosted.
+let cached: Anthropic | undefined;
+const client = () => (cached ??= new Anthropic());
 
 const MODEL = "claude-opus-5-5";
 
@@ -59,7 +61,7 @@ How to edit:
 
 export async function shapePitch(input: { draft: string; askUsd?: number }): Promise<ShapedPitch> {
   const note = input.askUsd ? `\n\nThe writer says they are asking for ${input.askUsd} US dollars in total.` : "";
-  const response = await client.beta.messages.parse({
+  const response = await client().beta.messages.parse({
     model: MODEL,
     max_tokens: 16000,
     system: EDITOR_SYSTEM,
@@ -130,7 +132,7 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
     run: async ({ kind, query }) => {
       emit({ type: "step", text: query ? `Searching the letterbox for “${query}”` : "Opening the letterbox" });
       const words = (query ?? "").toLowerCase().split(/\s+/).filter(Boolean);
-      const open = listPitches()
+      const open = (await listPitches())
         .filter((p) => p.raisedUsd < p.askUsd)
         .filter((p) => !kind || p.kind === kind)
         .filter((p) => {
@@ -149,7 +151,7 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
       "Read one letter in full: the complete text, the line-by-line use of funds and how much is still needed. Call this before proposing a gift to it.",
     inputSchema: z.object({ id: z.string().describe("Letter id from list_letters") }),
     run: async ({ id }) => {
-      const pitch = getPitch(id);
+      const pitch = await getPitch(id);
       if (!pitch) return `No letter with id "${id}". Use an id returned by list_letters.`;
       emit({ type: "step", text: `Reading ${pitch.author}, ${pitch.location}` });
       return JSON.stringify({
@@ -172,10 +174,10 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
       verify: z.string().optional().describe("One thing the patron should check first, if the letter leaves a real doubt"),
     }),
     run: async ({ letter_id, amount_usd, rationale, verify }) => {
-      const pitch = getPitch(letter_id);
+      const pitch = await getPitch(letter_id);
       if (!pitch) return `Rejected: no letter with id "${letter_id}".`;
       const amount = cents(amount_usd);
-      const current = getMandate(mandate.id);
+      const current = await getMandate(mandate.id);
       if (!current) return "Rejected: this mandate no longer exists.";
 
       const committed = current.proposals.reduce((sum, p) => sum + p.amountUsd, 0);
@@ -204,7 +206,7 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
         verify: verify?.trim() || undefined,
         status: "proposed",
       };
-      patchMandate(mandate.id, (m) => m.proposals.push(proposal));
+      await addProposal(mandate.id, proposal);
       const left = cents(remaining - amount);
       emit({
         type: "proposal",
@@ -216,7 +218,7 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
     },
   });
 
-  const final = await client.beta.messages.toolRunner({
+  const final = await client().beta.messages.toolRunner({
     model: MODEL,
     max_tokens: 16000,
     max_iterations: 16,
@@ -239,8 +241,6 @@ export async function runPatronAgent(mandate: Mandate, emit: (event: AgentEvent)
     .map((block) => block.text)
     .join("\n")
     .trim();
-  patchMandate(mandate.id, (m) => {
-    m.summary = summary;
-  });
+  await setMandateSummary(mandate.id, summary);
   emit({ type: "done", mandateId: mandate.id, summary });
 }

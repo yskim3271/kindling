@@ -4,6 +4,23 @@ A public letterbox. People post a story, a project or an argument and say what i
 
 Built for the PayPal AI Hackathon 2026.
 
+**Live demo:** https://kindling.deokjil.workers.dev (PayPal sandbox; no real money moves)
+
+## Try the live demo
+
+You need a PayPal **sandbox** buyer account to approve a payment. Use your own, or this test account:
+
+- Email: `sb-ztbz153861669@personal.example.com`
+- Password: `REPLACE_WITH_SANDBOX_PASSWORD`
+
+Then:
+
+1. **Give by hand.** Open any letter, pick an amount, press the PayPal button and approve with the sandbox account. The letter's total and the [ledger](https://kindling.deokjil.workers.dev/ledger) update at once.
+2. **Send the agent.** Open the [patron desk](https://kindling.deokjil.workers.dev/patron), press *Use the example*, set a budget and send the agent. It reads the letters and proposes gifts; approve one with its PayPal button.
+3. **Write a letter.** Open [Write yours](https://kindling.deokjil.workers.dev/write), paste a few rough sentences in any language and hand them to the editor.
+
+The demo allows a fixed number of agent runs and edits per day so that a public page cannot run up an unbounded model bill.
+
 ## What it does
 
 | Who | What they do | PayPal | AI |
@@ -51,6 +68,23 @@ Under *Testing Tools → Sandbox Accounts* PayPal gives you a Personal account (
 
 The eight letters that ship with the app are samples written for the demo and are labelled as such. They have no PayPal address, so a gift to one lands in the app's own sandbox account. Set `PAYPAL_PAYEE_MODE=platform` to route every gift that way.
 
+## Deploy to Cloudflare
+
+The app runs on Cloudflare Workers through the OpenNext adapter, with D1 for storage.
+
+```bash
+npx wrangler login
+npx wrangler d1 create kindling        # put the printed database_id into wrangler.jsonc
+npm run deploy                         # builds and deploys
+npx wrangler secret put PAYPAL_CLIENT_ID
+npx wrangler secret put PAYPAL_CLIENT_SECRET
+npx wrangler secret put ANTHROPIC_API_KEY
+```
+
+`npm run deploy` runs `scripts/deploy-cloudflare.mjs`. The adapter copies Next's `.env` files into the Worker, so the script moves `.env.local` aside during the build and passes only the public PayPal client ID through. Secrets reach the Worker through `wrangler secret` and nowhere else. The database table and the sample letters are created on the first request.
+
+Daily allowances default to 30 agent runs, 40 edits and 40 new letters. Change them with the variables `DAILY_LIMIT_AGENT`, `DAILY_LIMIT_EDITOR` and `DAILY_LIMIT_LETTERS`.
+
 ## How it is built
 
 ```
@@ -71,21 +105,24 @@ src/
   lib/
     ai.ts                            the editor and the agent (Anthropic SDK)
     paypal.ts                        Orders v2 over REST
-    db.ts, seed.ts                   JSON file store and sample letters
+    db.ts, seed.ts                   storage (D1 on Cloudflare, a JSON file locally) and sample letters
   components/
     PayPalButton.tsx                 PayPal JS SDK button
+scripts/deploy-cloudflare.mjs        build and deploy without bundling local secrets
+wrangler.jsonc, open-next.config.ts  Cloudflare Workers configuration
 ```
 
 - **Next.js 16** (App Router), React 19, TypeScript. No CSS framework.
 - **PayPal:** Orders v2 REST API on the server (`/v1/oauth2/token`, `/v2/checkout/orders`, `/v2/checkout/orders/{id}/capture`), the PayPal JS SDK button in the browser. Create and capture calls carry a `PayPal-Request-Id`, so a retry cannot charge twice.
 - **AI:** Claude Opus 5.5 through the official `@anthropic-ai/sdk`. The editor uses structured output with a Zod schema. The agent uses the SDK tool runner with three Zod-typed tools.
-- **Storage:** one JSON file in `data/`, created from the samples on first run. Delete the folder to reset.
+- **Storage:** Cloudflare D1 when deployed, one JSON file in `data/` when run locally (delete the folder to reset). Each record is its own row, and a letter's running total is changed in a single atomic statement, so two payments landing together cannot lose one.
+- **Hosting:** Cloudflare Workers through `@opennextjs/cloudflare`.
 
 ## Known limits
 
 - PayPal deducts its own fee from each gift, so the writer receives less than the patron sends (in the sandbox, $4.53 of a $5.00 gift). The ledger shows the amount sent.
 - No accounts. A patron's name is whatever they type, and anyone can post a letter. Real use needs sign-in and identity checks on writers.
-- The JSON store suits one server process. Use a database before running more than one.
+- The daily allowances are global counters, not per-visitor limits. One busy visitor can use up the day's agent runs for everyone.
 - Capture is confirmed in the request that follows approval. A production build should also listen for the `PAYMENT.CAPTURE.COMPLETED` webhook, so a closed browser tab cannot leave a paid gift unrecorded.
 - Nothing here has been reviewed for the rules that apply to fundraising platforms.
 

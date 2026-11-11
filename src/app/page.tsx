@@ -12,11 +12,11 @@ const FILTERS: { kind?: PitchKind; label: string }[] = [
 
 export default async function FrontPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams;
-  const all = listPitches();
+  const all = await listPitches();
   const active = FILTERS.find((f) => f.kind === kind)?.kind;
   const letters = active ? all.filter((p) => p.kind === active) : all;
 
-  const captured = listGifts().filter((g) => g.status === "captured");
+  const captured = (await listGifts()).filter((g) => g.status === "captured");
   const given = captured.reduce((sum, g) => sum + g.amountUsd, 0);
   const asked = all.reduce((sum, p) => sum + Math.max(0, p.askUsd - p.raisedUsd), 0);
 

@@ -4,10 +4,9 @@ import type { Gift, Pitch } from "./types";
  * Thin client for the PayPal Orders v2 REST API.
  * Docs: https://developer.paypal.com/docs/api/orders/v2/
  */
-const BASE =
-  process.env.PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
-
-export const PAYPAL_ENV = process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
+// Read at call time, not import time: on Workers the environment arrives with the request.
+export const paypalEnv = (): "live" | "sandbox" => (process.env.PAYPAL_ENV === "live" ? "live" : "sandbox");
+const base = () => (paypalEnv() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com");
 
 export function paypalConfigured(): boolean {
   return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
@@ -37,8 +36,8 @@ async function accessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
   if (!paypalConfigured()) throw new PayPalError("PayPal credentials are not set.", 503, "NOT_CONFIGURED");
 
-  const basic = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
-  const res = await fetch(`${BASE}/v1/oauth2/token`, {
+  const basic = btoa(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`);
+  const res = await fetch(`${base()}/v1/oauth2/token`, {
     method: "POST",
     headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: "grant_type=client_credentials",
@@ -61,7 +60,7 @@ interface PayPalErrorBody {
 
 async function call<T>(method: "GET" | "POST", path: string, body?: unknown, requestId?: string): Promise<T> {
   const token = await accessToken();
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${base()}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

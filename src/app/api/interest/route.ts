@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  */
 export async function POST(req: Request) {
   const body = await readJson(req);
-  const pitch = getPitch(str(body?.pitchId, 120));
+  const pitch = await getPitch(str(body?.pitchId, 120));
   if (!pitch) return fail("That letter no longer exists.", 404);
   if (!pitch.openToInvestment) return fail("This writer is not looking for investment.");
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   if (!isEmail(email)) return fail("Add an email the writer can reply to.");
   if (message.length < 10) return fail("Say a sentence about what you have in mind.");
 
-  addInterest({
+  await addInterest({
     id: newId("int"),
     pitchId: pitch.id,
     name,

@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kindling",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Lets the app call itself; the service name must match "name" above.
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "kindling"
+    }
+  ],
+  "d1_databases": [
+    {
+      // Letters, gifts and the agent's proposals. Replace the id with your own
+      // after `npx wrangler d1 create kindling`. The table is created on first use.
+      "binding": "DB",
+      "database_name": "kindling",
+      "database_id": "49be2a8e-bcf8-4c1c-90ba-eb071f621b9f"
+    }
+  ],
+  "vars": {
+    "PAYPAL_ENV": "sandbox",
+    "PAYPAL_PAYEE_MODE": "direct"
+  },
+  "observability": {
+    "enabled": true
+  }
+  // Secrets, set with `npx wrangler secret put <NAME>`:
+  //   PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, ANTHROPIC_API_KEY
+}
