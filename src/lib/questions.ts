@@ -1,11 +1,12 @@
 import type { Noul } from "./jev";
 import { KIND_LABEL } from "./format";
+import { causeById, type Cause, type Preferences } from "./preferences";
 import type { Pitch } from "./types";
 
 /**
  * Every question the patron's agent asks Jev, and the thresholds that turn the
  * answers into decisions. This is the file to read, and to edit, when you want
- * to know why the agent proposed what it did.
+ * to know why the agent recommended what it did.
  *
  * Each question asks for one judgment a person could make at a glance. None of
  * them asks "should the patron fund this?": that decision is made in agent.ts.
@@ -14,10 +15,13 @@ import type { Pitch } from "./types";
 /** Above `yes` reads as yes, below `no` as no. Between the two the letter does not settle the question. */
 export const THRESHOLD = { yes: 0.7, no: 0.3 } as const;
 
-/** What Jev is shown for one letter: the patron's own words and the letter, nothing else. */
-export function letterState(mandate: string, pitch: Pitch) {
+/** What Jev is shown for one letter: what the patron said they look for, and the letter. Nothing else. */
+export function letterState(prefs: Pick<Preferences, "causes" | "note">, pitch: Pitch) {
   return {
-    patron_mandate: mandate,
+    patron: {
+      ...(prefs.causes.length > 0 ? { cares_about: prefs.causes.map((id) => causeById(id).label) } : {}),
+      ...(prefs.note ? { also_asks_for: prefs.note } : {}),
+    },
     letter: {
       kind: KIND_LABEL[pitch.kind],
       headline: pitch.headline,
@@ -30,16 +34,29 @@ export function letterState(mandate: string, pitch: Pitch) {
   };
 }
 
-export const LETTER_QUESTIONS = {
-  /** Does the letter ask for the kind of thing this patron wants to back? */
-  fits: {
+/** One question per cause the patron picked. A letter can meet several. */
+export function causeQuestion(cause: Cause): Noul {
+  return {
     type: "noul",
-    instructions: "Is `letter` a request of the kind `patron_mandate` says the patron wants to fund?",
+    instructions: `Is \`letter\` a request for money toward ${cause.about}?`,
     criteria: {
-      true: "The letter asks for what the mandate describes.",
-      false: "The letter asks for something the mandate does not describe, or something it says the patron does not want.",
+      true: `The money the letter asks for goes toward ${cause.about}.`,
+      false: "The money goes toward something else, even if the letter mentions this in passing.",
     },
+  };
+}
+
+/** Asked only when the patron wrote a note of their own. */
+export const NOTE_QUESTION: Noul = {
+  type: "noul",
+  instructions: "Is `letter` the kind of request `patron.also_asks_for` describes?",
+  criteria: {
+    true: "The letter is what the patron's note describes.",
+    false: "The letter is not what the note describes, or is something the note says the patron does not want.",
   },
+};
+
+export const LETTER_QUESTIONS = {
   /** Could a stranger confirm the writer's account? Drives the "check first" note. */
   checkable: {
     type: "noul",
@@ -65,24 +82,11 @@ export function sentenceQuestion(sentence: string): Noul {
   return {
     type: "noul",
     instructions: {
-      question: "Does `sentence`, taken from `letter.text`, show that the writer's request is what `patron_mandate` describes?",
+      question: "Does `sentence`, taken from `letter.text`, show that the writer's request is one `patron` is looking for?",
       sentence,
     },
   };
 }
-
-/** Asked once about the mandate alone. Decides whether part-funding a letter is acceptable. */
-export const MANDATE_QUESTIONS = {
-  prefersCompleting: {
-    type: "noul",
-    instructions:
-      "Does `patron_mandate` say the patron would rather fully fund one request than spread smaller gifts across several?",
-    criteria: {
-      true: "States a preference for finishing or completing a single request.",
-      false: "States no such preference, or prefers spreading gifts across many requests.",
-    },
-  },
-} satisfies Record<string, Noul>;
 
 /** Split a letter into sentences worth quoting. */
 export function sentences(text: string): string[] {

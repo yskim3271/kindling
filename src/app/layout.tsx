@@ -13,7 +13,7 @@ const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variabl
 export const metadata: Metadata = {
   title: { default: "Kindling", template: "%s · Kindling" },
   description:
-    "A public letterbox. People post a story, a project or an argument; patrons read and fund them through PayPal, by hand or through an agent that never spends without a signature.",
+    "A public letterbox. People post a story, a project or an argument; patrons read and fund them through PayPal, by hand or on the recommendation of an agent that reads against their saved preferences and never spends without their approval.",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };

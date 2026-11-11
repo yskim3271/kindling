@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MatchBadge } from "@/components/MatchBadge";
 import { listGifts, listPitches } from "@/lib/db";
 import { KIND_LABEL, money, shortDate } from "@/lib/format";
 import type { PitchKind } from "@/lib/types";
@@ -27,15 +28,15 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
           <h1>Write to the people who can help.</h1>
           <p className="lede__deck">
             Kindling is a public letterbox. Anyone can post a story, a project or an argument and say what it would
-            cost. Patrons read, and pay through PayPal: by hand, or by sending an agent that reads on their behalf and
-            never spends without a signature.
+            cost. Patrons read, and pay through PayPal: by hand, or by saying once what they want to back and letting
+            an agent recommend letters. Nothing is spent without the patron’s own approval.
           </p>
           <div className="lede__actions">
             <Link href="/write" className="btn">
               Write a letter
             </Link>
             <Link href="/patron" className="btn btn--quiet">
-              Send an agent
+              Set your preferences
             </Link>
           </div>
         </div>
@@ -90,6 +91,7 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
             return (
               <li className="letter-row" key={pitch.id}>
                 <article>
+                  <MatchBadge pitchId={pitch.id} />
                   <span className="label">
                     {KIND_LABEL[pitch.kind]}
                     {pitch.location && ` · ${pitch.location}`} · {shortDate(pitch.createdAt)}

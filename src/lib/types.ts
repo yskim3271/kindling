@@ -1,3 +1,5 @@
+import type { Preferences } from "./preferences";
+
 export type PitchKind = "story" | "project" | "opinion";
 
 export interface FundLine {
@@ -50,8 +52,10 @@ export interface Proposal {
   amountUsd: number;
   /** What the amount pays for. Assembled by code from the letter's own figures. */
   rationale: string;
-  /** Jev's probability that the letter fits the patron's mandate. */
+  /** How well the letter fits the patron's preferences, from Jev's probabilities. */
   fit?: number;
+  /** Which of the patron's preferences the letter met, each with its probability. */
+  matches?: { label: string; p: number }[];
   /** The writer's own sentence that best shows the fit. */
   quote?: string;
   /** Shown when the letter names no one who could confirm it. */
@@ -59,12 +63,9 @@ export interface Proposal {
   status: "proposed" | "paid" | "skipped";
 }
 
-export interface Mandate {
+/** One reading of the letterbox against a patron's saved preferences. */
+export interface Mandate extends Preferences {
   id: string;
-  patronName: string;
-  thesis: string;
-  budgetUsd: number;
-  perGiftCapUsd: number;
   proposals: Proposal[];
   summary?: string;
   createdAt: string;

@@ -1,32 +1,24 @@
 import { runPatronAgent, type AgentEvent } from "@/lib/agent";
 import { addMandate, newId, withinDailyLimit } from "@/lib/db";
-import { cents } from "@/lib/format";
-import { describeError, fail, num, readJson, str } from "@/lib/http";
+import { describeError, fail, readJson } from "@/lib/http";
+import { parsePreferences } from "@/lib/preferences";
 import type { Mandate } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-/** Streams the agent's progress as newline-delimited JSON. */
+/**
+ * Reads the letterbox against a patron's preferences and streams the progress
+ * as newline-delimited JSON.
+ */
 export async function POST(req: Request) {
-  const body = await readJson(req);
-  const thesis = str(body?.thesis, 2000);
-  const patronName = str(body?.patronName, 80) || "A patron";
-  const budgetUsd = cents(num(body?.budgetUsd));
-  const perGiftCapUsd = cents(num(body?.perGiftCapUsd));
-
-  if (thesis.length < 20) return fail("Describe what you want to back in a sentence or two.");
-  if (!(budgetUsd >= 5 && budgetUsd <= 100_000)) return fail("Set a budget between $5 and $100,000.");
-  if (!(perGiftCapUsd >= 1 && perGiftCapUsd <= budgetUsd)) {
-    return fail("The cap per gift must be at least $1 and no more than the budget.");
-  }
+  const preferences = parsePreferences(await readJson(req));
+  if (typeof preferences === "string") return fail(preferences);
 
   const mandate: Mandate = {
+    ...preferences,
+    patronName: preferences.patronName || "A patron",
     id: newId("mandate"),
-    patronName,
-    thesis,
-    budgetUsd,
-    perGiftCapUsd,
     proposals: [],
     createdAt: new Date().toISOString(),
   };
