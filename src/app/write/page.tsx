@@ -8,22 +8,21 @@ export default function WritePage() {
     <div className="desk desk--write wrap">
       <div className="stack">
         <div>
-          <h1>Write it rough. The editor will set it.</h1>
+          <h1>Write it in your own words.</h1>
           <p className="desk__deck">
-            Put down what you need in your own words and your own language. An editor turns it into a letter a stranger
-            can read in a minute, and tells you what a careful patron will ask. You approve every word before it is
-            posted.
+            A letter here is written by the person asking. Nothing drafts it, polishes it or translates it for you, and
+            that is the point: a patron is reading you, not a machine’s idea of you.
           </p>
         </div>
         <WriteForm />
       </div>
 
       <aside className="desk__aside">
-        <h2>What the editor will not do</h2>
+        <h2>What a careful patron looks for</h2>
         <ul>
-          <li>Add a fact, a number or a feeling you did not write. If something is missing, it asks you.</li>
-          <li>Post anything. The edited letter comes back to you to change or throw away.</li>
-          <li>Touch your money. Gifts go by PayPal to the address you give, and to nowhere else.</li>
+          <li>What the money buys, item by item, with a price on each.</li>
+          <li>Someone or something that can confirm your account: a supervisor, a school, a client, a record.</li>
+          <li>What changes once it is paid for, and by when you need it.</li>
         </ul>
       </aside>
     </div>

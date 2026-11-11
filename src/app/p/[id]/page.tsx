@@ -45,13 +45,6 @@ export default async function LetterPage({ params }: Params) {
           <p className="letter__sign">{pitch.author}</p>
         </div>
 
-        {pitch.originalBody && (
-          <details className="translated">
-            <summary>Translated from {pitch.language}. Read the original</summary>
-            <div lang={pitch.language === "Korean" ? "ko" : undefined}>{pitch.originalBody}</div>
-          </details>
-        )}
-
         {pitch.useOfFunds.length > 0 && (
           <>
             <h2>What the money buys</h2>

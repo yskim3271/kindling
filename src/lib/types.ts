@@ -13,9 +13,6 @@ export interface Pitch {
   headline: string;
   summary: string;
   body: string;
-  /** Present when the writer drafted in a language other than English. */
-  originalBody?: string;
-  language?: string;
   askUsd: number;
   raisedUsd: number;
   useOfFunds: FundLine[];
@@ -51,8 +48,13 @@ export interface Proposal {
   id: string;
   pitchId: string;
   amountUsd: number;
+  /** What the amount pays for. Assembled by code from the letter's own figures. */
   rationale: string;
-  /** Something the agent could not confirm from the letter alone. */
+  /** Jev's probability that the letter fits the patron's mandate. */
+  fit?: number;
+  /** The writer's own sentence that best shows the fit. */
+  quote?: string;
+  /** Shown when the letter names no one who could confirm it. */
   verify?: string;
   status: "proposed" | "paid" | "skipped";
 }

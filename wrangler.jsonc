@@ -32,5 +32,5 @@
     "enabled": true
   }
   // Secrets, set with `npx wrangler secret put <NAME>`:
-  //   PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, ANTHROPIC_API_KEY
+  //   PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, TYPESAFE_API_KEY
 }

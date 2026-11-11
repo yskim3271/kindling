@@ -7,6 +7,15 @@ export const runtime = "nodejs";
 
 const KINDS: PitchKind[] = ["story", "project", "opinion"];
 
+/** The first sentence or two of a letter, cut at a word. */
+function opening(text: string): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (flat.length <= 240) return flat;
+  const cut = flat.slice(0, 240);
+  const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+  return stop > 80 ? cut.slice(0, stop + 1) : `${cut.slice(0, cut.lastIndexOf(" "))}…`;
+}
+
 export async function POST(req: Request) {
   const body = await readJson(req);
   if (!body) return fail("Send the letter as JSON.");
@@ -14,7 +23,8 @@ export async function POST(req: Request) {
   const author = str(body.author, 80);
   const location = str(body.location, 80);
   const headline = str(body.headline, 140);
-  const summary = str(body.summary, 600);
+  // Without a summary of the writer's own, the feed shows how the letter opens.
+  const summary = str(body.summary, 600) || opening(str(body.body, 12_000));
   const text = str(body.body, 12_000);
   const paypalEmail = str(body.paypalEmail, 200).toLowerCase();
   const kind = KINDS.includes(body.kind as PitchKind) ? (body.kind as PitchKind) : "story";
@@ -38,10 +48,6 @@ export async function POST(req: Request) {
     .filter(Boolean)
     .slice(0, 6);
 
-  const language = str(body.language, 40);
-  const originalBody = str(body.originalBody, 12_000);
-  const translated = Boolean(language && language.toLowerCase() !== "english" && originalBody);
-
   let id = slugify(`${author} ${headline}`) || newId("letter");
   if (await getPitch(id)) id = `${id}-${newId("x").slice(2, 8)}`;
 
@@ -53,8 +59,6 @@ export async function POST(req: Request) {
     headline,
     summary,
     body: text,
-    originalBody: translated ? originalBody : undefined,
-    language: translated ? language : undefined,
     askUsd,
     raisedUsd: 0,
     useOfFunds,

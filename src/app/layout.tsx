@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/ledger">Read the ledger</Link>
             <Link href="/write">Write a letter</Link>
             <Link href="/patron">Patron desk</Link>
-            <span>Payments by PayPal · Reading by Claude</span>
+            <span>Payments by PayPal · Reading by Jev</span>
           </p>
           </div>
         </footer>

@@ -9,7 +9,7 @@
 //   node scripts/deploy-cloudflare.mjs --build    build only
 //
 // Runtime secrets live in Cloudflare: `npx wrangler secret put <NAME>` for
-// PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET and ANTHROPIC_API_KEY.
+// PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET and TYPESAFE_API_KEY.
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 

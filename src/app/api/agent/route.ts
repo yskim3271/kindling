@@ -1,4 +1,4 @@
-import { runPatronAgent, type AgentEvent } from "@/lib/ai";
+import { runPatronAgent, type AgentEvent } from "@/lib/agent";
 import { addMandate, newId, withinDailyLimit } from "@/lib/db";
 import { cents } from "@/lib/format";
 import { describeError, fail, num, readJson, str } from "@/lib/http";
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     proposals: [],
     createdAt: new Date().toISOString(),
   };
-  if (!(await withinDailyLimit("agent", 30))) {
+  if (!(await withinDailyLimit("agent", 300))) {
     return fail("The agent has done all the reading it can for today. Come back tomorrow.", 429);
   }
   await addMandate(mandate);

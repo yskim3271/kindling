@@ -619,26 +619,6 @@ a:hover {
   font-size: var(--text-xl);
 }
 
-.translated {
-  margin-top: var(--space-lg);
-  max-width: var(--measure);
-  font-size: var(--text-sm);
-  color: var(--color-muted);
-}
-
-.translated summary {
-  cursor: pointer;
-}
-
-.translated div {
-  margin-top: var(--space-sm);
-  padding-left: var(--space-md);
-  border-left: var(--rule-hair) solid var(--color-rule-strong);
-  white-space: pre-wrap;
-  color: var(--color-ink);
-  font-size: var(--text-base);
-}
-
 .ledger {
   width: 100%;
   border-collapse: collapse;
@@ -878,9 +858,16 @@ a:hover {
   text-decoration: underline;
 }
 
+.proposal__quote {
+  margin-top: var(--space-xs);
+  max-width: 56ch;
+  font-style: italic;
+}
+
 .proposal__why {
   margin-top: var(--space-xs);
   max-width: 56ch;
+  color: var(--color-muted);
 }
 
 .proposal__verify {

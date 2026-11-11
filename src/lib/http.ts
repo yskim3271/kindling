@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AiRefusedError } from "./ai";
+import { JevError } from "./jev";
 import { PayPalError } from "./paypal";
 
 export function fail(message: string, status = 400, extra: Record<string, unknown> = {}) {
@@ -20,20 +19,18 @@ export function describeError(err: unknown): { message: string; status: number; 
     }
     return { message: `PayPal: ${err.message}`, status: err.status >= 500 ? 502 : 422, issue: err.issue };
   }
-  if (err instanceof AiRefusedError) {
-    return { message: "The model declined to work on this text. Rephrase it and try again.", status: 422 };
+  if (err instanceof JevError) {
+    if (err.status === 401 || err.status === 503) {
+      return { message: "The TypeSafe API key is missing or invalid. Set TYPESAFE_API_KEY.", status: 503 };
+    }
+    if (err.status === 429 || err.status === 529) {
+      return { message: "Jev is busy right now. Wait a moment and send the agent again.", status: 429 };
+    }
+    console.error(err);
+    return { message: "Jev could not read the letters just now. Nothing was proposed. Try again.", status: 502 };
   }
-  if (err instanceof Anthropic.AuthenticationError) {
-    return { message: "The Claude API key is missing or invalid. Set ANTHROPIC_API_KEY in .env.local.", status: 503 };
-  }
-  if (err instanceof Anthropic.RateLimitError) {
-    return { message: "Claude is rate-limited right now. Wait a moment and try again.", status: 429 };
-  }
-  if (err instanceof Anthropic.APIConnectionError) {
-    return { message: "Could not reach Claude. Check the network and try again.", status: 502 };
-  }
-  if (err instanceof Anthropic.APIError) {
-    return { message: `Claude returned an error (${err.status ?? "unknown"}). Try again.`, status: 502 };
+  if (err instanceof TypeError) {
+    return { message: "A service this page depends on could not be reached. Check the network and try again.", status: 502 };
   }
   console.error(err);
   return { message: "Something went wrong on our side. Try again.", status: 500 };

@@ -75,9 +75,7 @@ const seeds: Seed[] = [
     headline: "I left a welding course to care for my grandmother. I want to finish it.",
     summary:
       "I was four months into a six-month welding certification when my grandmother had a stroke. She is stable now, and the course will take me back if I can pay for the remaining module and the test.",
-    body: "저는 스물여섯이고, 할머니 손에 자랐습니다. 작년 가을 용접 기능사 과정을 넉 달째 다니던 중에 할머니가 쓰러지셨고, 저는 과정을 그만두고 간병을 시작했습니다.\n\n이제 할머니는 주간보호센터에 다니실 만큼 회복하셨습니다. 학원에서는 남은 두 달 과정과 실기 시험만 마치면 자격증을 받을 수 있다고 합니다. 문제는 그만둘 때 환불받은 수강료를 간병비로 이미 다 썼다는 것입니다.\n\n자격증이 있으면 지금 하는 편의점 야간 일보다 두 배 가까이 벌 수 있습니다. 할머니를 계속 모시면서요. 남은 과정 수강료와 시험 응시료, 그리고 안전화와 보호구 값이 필요합니다.",
-    originalBody: undefined,
-    language: "Korean",
+    body: "I am twenty-six, and my grandmother raised me. Last autumn I was four months into a welding certification course when she collapsed. I left the course and became her carer.\n\nShe has recovered enough to attend a day-care centre now. The school says I can receive the certificate if I complete the remaining two months and pass the practical test. The trouble is that the tuition refund I received when I left has already gone on her care.\n\nWith the certificate I can earn nearly twice what I make on night shifts at a convenience store, and keep looking after her. I need the fee for the remaining module, the exam fee, and the cost of safety boots and protective gear.",
     askUsd: 900,
     useOfFunds: [
       { item: "Remaining two-month course module", amountUsd: 620 },
@@ -166,9 +164,6 @@ const seeds: Seed[] = [
   },
 ];
 
-const JIWOO_ENGLISH =
-  "I am twenty-six, and my grandmother raised me. Last autumn I was four months into a welding certification course when she collapsed. I left the course and became her carer.\n\nShe has recovered enough to attend a day-care centre now. The school says I can receive the certificate if I complete the remaining two months and pass the practical test. The trouble is that the tuition refund I received when I left has already gone on her care.\n\nWith the certificate I can earn nearly twice what I make on night shifts at a convenience store, and keep looking after her. I need the fee for the remaining module, the exam fee, and the cost of safety boots and protective gear.";
-
 export function seedPitches(now = Date.now()): Pitch[] {
   return seeds.map(({ daysAgo, ...seed }) => {
     const pitch: Pitch = {
@@ -177,10 +172,6 @@ export function seedPitches(now = Date.now()): Pitch[] {
       sample: true,
       createdAt: new Date(now - daysAgo * 86_400_000).toISOString(),
     };
-    if (pitch.id === "jiwoo-welding-certificate") {
-      pitch.originalBody = pitch.body;
-      pitch.body = JIWOO_ENGLISH;
-    }
     return pitch;
   });
 }

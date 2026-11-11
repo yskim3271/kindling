@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import type { AgentEvent } from "@/lib/ai";
+import type { AgentEvent } from "@/lib/agent";
 import { KIND_LABEL, money } from "@/lib/format";
 import type { Gift, Proposal } from "@/lib/types";
 import { PayPalButton } from "./PayPalButton";
@@ -117,6 +117,10 @@ export function PatronDesk() {
             Say what you want to back and how much. An agent reads every open letter and comes back with gifts to sign.
             It cannot pay; only you can, one PayPal approval at a time.
           </p>
+          <p className="desk__deck small">
+            The reading is done by Jev, a model that answers yes-or-no questions with a probability and writes
+            nothing. Which letters qualify and for how much is decided by plain rules you can read in the source.
+          </p>
         </div>
 
         <div className="field">
@@ -204,8 +208,8 @@ export function PatronDesk() {
           <div className="desk__aside">
             <h2>What comes back</h2>
             <ol>
-              <li>A running log of what the agent opened and read.</li>
-              <li>Proposed gifts, each with the reason in a sentence and anything you should check first.</li>
+              <li>A running log of each letter read, with the probability that it fits what you asked for.</li>
+              <li>Proposed gifts, each with the writer’s own sentence that shows the fit, and what the amount pays for.</li>
               <li>A PayPal button on every proposal. Sign the ones you agree with; skip the rest.</li>
             </ol>
           </div>
@@ -261,12 +265,16 @@ export function PatronDesk() {
                             {row.pitch.headline}
                           </Link>
                         </h3>
+                        {row.proposal.quote && <p className="proposal__quote">“{row.proposal.quote}”</p>}
                         <p className="proposal__why">{row.proposal.rationale}</p>
                         {row.proposal.verify && <p className="proposal__verify">Check first: {row.proposal.verify}</p>}
                       </div>
 
                       <div className="proposal__act">
                         <span className="proposal__amount">{money(row.proposal.amountUsd)}</span>
+                        {row.proposal.fit !== undefined && (
+                          <span className="small quiet figure">Fit with your mandate {Math.round(row.proposal.fit * 100)}%</span>
+                        )}
                         {status === "paid" && row.gift && (
                           <p className="notice notice--ok" role="status">
                             Paid. Capture <span className="figure">{row.gift.captureId}</span>
