@@ -12,7 +12,7 @@ interface Props {
   pitchId: string;
   author: string;
   stillNeededUsd: number;
-  /** True when the gift is paid straight into the writer's own PayPal account. */
+  /** True when the gift is paid straight into the developer's own PayPal account. */
   direct: boolean;
 }
 
@@ -57,7 +57,7 @@ export function GiftPanel({ pitchId, author, stillNeededUsd, direct }: Props) {
   return (
     <div className="stack stack--tight">
       {stillNeededUsd === 0 && (
-        <p className="notice notice--ok">This letter has everything it asked for. A further gift still goes to {author}.</p>
+        <p className="notice notice--ok">This game has everything it asked for. A further gift still goes to {author}.</p>
       )}
       <div className="field">
         <span className="field__label" id="amount-label">
@@ -126,7 +126,7 @@ export function GiftPanel({ pitchId, author, stillNeededUsd, direct }: Props) {
       <p className="small quiet">
         {direct
           ? `Paid by PayPal straight to ${author}’s account, less PayPal’s fee. Kindling never holds the money.`
-          : "This is a sample letter with no PayPal address, so a gift lands in the demo’s own sandbox account."}
+          : "This is a sample project with no PayPal address, so a gift lands in the demo’s own sandbox account."}
       </p>
     </div>
   );

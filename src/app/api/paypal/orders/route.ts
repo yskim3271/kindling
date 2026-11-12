@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   const pitch = await getPitch(pitchId);
-  if (!pitch) return fail("That letter no longer exists.", 404);
+  if (!pitch) return fail("That project no longer exists.", 404);
   if (!(amountUsd >= 1 && amountUsd <= 10_000)) return fail("Gifts can be between $1 and $10,000.");
 
   const gift: Gift = {

@@ -5,14 +5,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AgentEvent, ReadingResult } from "@/lib/agent";
 import { money } from "@/lib/format";
 import {
-  CAUSES,
-  KINDS,
+  NEEDS,
   STYLE_LABEL,
-  causeById,
+  TASTES,
+  needById,
   parsePreferences,
-  type CauseId,
+  stageLabel,
+  tasteById,
   type GivingStyle,
+  type NeedId,
   type Preferences,
+  type TasteId,
 } from "@/lib/preferences";
 import type { Gift, Proposal } from "@/lib/types";
 import { PayPalButton } from "./PayPalButton";
@@ -29,7 +32,8 @@ interface Row {
 
 /** The form's own state: amounts stay text while they are being typed. */
 interface Draft {
-  causes: CauseId[];
+  tastes: TasteId[];
+  needs: NeedId[];
   note: string;
   style: GivingStyle;
   budget: string;
@@ -37,19 +41,21 @@ interface Draft {
   patronName: string;
 }
 
-const BLANK: Draft = { causes: [], note: "", style: "complete", budget: "500", cap: "200", patronName: "" };
+const BLANK: Draft = { tastes: [], needs: [], note: "", style: "complete", budget: "500", cap: "200", patronName: "" };
 
 const EXAMPLE: Draft = {
-  causes: ["education", "livelihood"],
-  note: "One specific purchase away from earning more, with a price on each item.",
-  style: "complete",
-  budget: "1500",
-  cap: "700",
+  tastes: ["story", "puzzle"],
+  needs: ["audio", "reach"],
+  note: "",
+  style: "spread",
+  budget: "3000",
+  cap: "1200",
   patronName: "",
 };
 
 const toDraft = (p: Preferences): Draft => ({
-  causes: p.causes,
+  tastes: p.tastes,
+  needs: p.needs,
   note: p.note,
   style: p.style,
   budget: String(p.budgetUsd),
@@ -81,7 +87,7 @@ export function PatronDesk() {
     if (event.type === "start") setMandateId(event.mandateId);
     if (event.type === "step") setSteps((prev) => [...prev, event.text]);
     if (event.type === "proposal") {
-      setSteps((prev) => [...prev, `Recommended ${money(event.proposal.amountUsd)} to ${event.pitch.author}`]);
+      setSteps((prev) => [...prev, `Recommended ${money(event.proposal.amountUsd)} to ${event.pitch.title}`]);
       setRows((prev) => [...prev, { proposal: event.proposal, pitch: event.pitch }]);
     }
     if (event.type === "done") {
@@ -142,7 +148,7 @@ export function PatronDesk() {
     [handle],
   );
 
-  // A returning patron's preferences are already here: read the letterbox for them straight away.
+  // A returning patron's preferences are already here: read the board for them straight away.
   const opened = useRef(false);
   useEffect(() => {
     if (opened.current) return;
@@ -207,9 +213,9 @@ export function PatronDesk() {
             <h1>Say once what you want to back</h1>
             <p className="desk__deck">
               Set your preferences here and they stay in this browser. Each time you come back, an agent reads the open
-              letters against them and recommends gifts. It cannot pay; only you can, one PayPal approval at a time.
+              projects against them and recommends gifts. It cannot pay; only you can, one PayPal approval at a time.
             </p>
-            {draft.causes.length === 0 && !draft.note && (
+            {draft.tastes.length === 0 && draft.needs.length === 0 && !draft.note && (
               <button type="button" className="linklike small" onClick={() => setDraft(EXAMPLE)}>
                 Fill in an example
               </button>
@@ -217,29 +223,48 @@ export function PatronDesk() {
           </div>
 
           <fieldset className="fieldset">
-            <legend>Which causes?</legend>
+            <legend>What kinds of game do you like?</legend>
             <div className="chips">
-              {CAUSES.map((cause) => (
-                <label className="chip" key={cause.id}>
+              {TASTES.map((taste) => (
+                <label className="chip" key={taste.id}>
                   <input
                     type="checkbox"
-                    checked={draft.causes.includes(cause.id)}
-                    onChange={() => setDraft((d) => ({ ...d, causes: toggle(d.causes, cause.id) }))}
+                    checked={draft.tastes.includes(taste.id)}
+                    onChange={() => setDraft((d) => ({ ...d, tastes: toggle(d.tastes, taste.id) }))}
                   />
-                  {cause.label}
+                  {taste.label}
                 </label>
               ))}
             </div>
             <span className="field__hint">
-              A letter fits when its request is about any one of these. Writers do not tag their letters; the agent
-              reads each one.
+              Any one is enough. Developers do not pick from this list; the agent reads what each of them wrote.
+            </span>
+          </fieldset>
+
+          <fieldset className="fieldset">
+            <legend>What should your money pay for?</legend>
+            <div className="chips">
+              {NEEDS.map((need) => (
+                <label className="chip" key={need.id}>
+                  <input
+                    type="checkbox"
+                    checked={draft.needs.includes(need.id)}
+                    onChange={() => setDraft((d) => ({ ...d, needs: toggle(d.needs, need.id) }))}
+                  />
+                  {need.label}
+                </label>
+              ))}
+            </div>
+            <span className="field__hint">
+              Any one is enough. If you choose from both lists, a project has to be a game you like and ask for
+              something you want to pay for.
             </span>
           </fieldset>
 
           <div className="field">
-            <label htmlFor="note">What else should be true of a letter you back?</label>
+            <label htmlFor="note">What else should be true of a project you back?</label>
             <span className="field__hint">
-              Optional, in your own words. If you write something here, a letter has to meet it as well as a cause.
+              Optional, in your own words. If you write something here, a project has to meet it as well.
             </span>
             <textarea
               id="note"
@@ -247,7 +272,7 @@ export function PatronDesk() {
               rows={3}
               style={{ minHeight: "5rem" }}
               maxLength={600}
-              placeholder={EXAMPLE.note}
+              placeholder="Made by one or two people, with something I can already play."
               value={draft.note}
               onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
             />
@@ -267,8 +292,8 @@ export function PatronDesk() {
                   {STYLE_LABEL[style]}
                   <span className="field__hint" style={{ display: "block" }}>
                     {style === "complete"
-                      ? "Only gifts that cover everything a letter still needs."
-                      : "Part of an ask is fine: whole items from the writer’s list, in their order."}
+                      ? "Only gifts that cover everything a project still needs."
+                      : "Part of an ask is fine: whole items from the developer’s list, and only the kind you chose above."}
                   </span>
                 </span>
               </label>
@@ -288,7 +313,7 @@ export function PatronDesk() {
               />
             </div>
             <div className="field">
-              <label htmlFor="cap">Most for one letter</label>
+              <label htmlFor="cap">Most for one game</label>
               <input
                 id="cap"
                 className="input input--figure"
@@ -340,9 +365,8 @@ export function PatronDesk() {
           <ol>
             <li>They are kept in this browser. Kindling has no accounts, so there is nothing to sign up for.</li>
             <li>
-              Every open letter is read, whatever its writer filed it under. For each one Jev answers one yes-or-no
-              question per cause with a probability. It writes nothing and
-              chooses no amounts.
+              Every open project is read. For each one Jev answers one yes-or-no question per choice you made, with a
+              probability. It writes nothing and chooses no amounts.
             </li>
             <li>
               Rules you can read in the source turn those numbers into recommended gifts inside your budget. Each one
@@ -366,18 +390,24 @@ export function PatronDesk() {
         <div>
           <h1>Recommended for you</h1>
           <p className="desk__deck">
-            An agent read the open letters against the preferences you saved. Approve the gifts you agree with; nothing
-            is paid until you do.
+            An agent read the open projects against the preferences you saved. Approve the gifts you agree with;
+            nothing is paid until you do.
           </p>
         </div>
 
         <div className="till">
           <span className="label">Your standing preferences</span>
           <dl className="prefs">
-            {saved.causes.length > 0 && (
+            {saved.tastes.length > 0 && (
               <div>
-                <dt>Causes</dt>
-                <dd>{saved.causes.map((id) => causeById(id).label).join(", ")}</dd>
+                <dt>Games</dt>
+                <dd>{saved.tastes.map((id) => tasteById(id).label).join(", ")}</dd>
+              </div>
+            )}
+            {saved.needs.length > 0 && (
+              <div>
+                <dt>Pays for</dt>
+                <dd>{saved.needs.map((id) => needById(id).label).join(", ")}</dd>
               </div>
             )}
             {saved.note && (
@@ -393,7 +423,7 @@ export function PatronDesk() {
             <div>
               <dt>Budget</dt>
               <dd className="figure">
-                {money(saved.budgetUsd)} a round, {money(saved.perGiftCapUsd)} at most for one letter
+                {money(saved.budgetUsd)} a round, {money(saved.perGiftCapUsd)} at most for one game
               </dd>
             </div>
           </dl>
@@ -401,7 +431,7 @@ export function PatronDesk() {
 
         <div className="lede__actions" style={{ marginTop: 0 }}>
           <button type="button" className="btn" disabled={running} aria-busy={running} onClick={() => void run(saved)}>
-            {running ? "Reading the letterbox…" : "Read again"}
+            {running ? "Reading the board…" : "Read again"}
           </button>
           <button type="button" className="btn btn--quiet" onClick={edit}>
             Edit preferences
@@ -452,106 +482,110 @@ export function PatronDesk() {
 
         {done && rows.length === 0 && !error && <p className="quiet">Nothing is recommended this round.</p>}
 
-        {KINDS.map((kind) => {
-          const group = rows.filter((row) => row.pitch.kind === kind.id);
-          if (group.length === 0) return null;
-          return (
-            <div key={kind.id}>
-              <h2 className="section-title section-title--count">
-                {kind.plural}
-                <span>
-                  {group.length} recommended
-                </span>
-              </h2>
-              <ol className="proposals">
-                  {group.map((row) => {
-                    const status = row.gift ? "paid" : row.proposal.status;
-                    return (
-                      <li className="proposal" key={row.proposal.id} data-status={status}>
-                        <div>
-                          <span className="label">
-                            {row.pitch.author}, {row.pitch.location}
-                          </span>
-                          <h3>
-                            <Link href={`/p/${row.pitch.id}`} target="_blank">
-                              {row.pitch.headline}
-                            </Link>
-                          </h3>
-                          {row.proposal.matches && row.proposal.matches.length > 0 && (
-                            <ul className="matches" aria-label="Preferences this letter met">
-                              {row.proposal.matches.map((match) => (
-                                <li key={match.label}>
-                                  {match.label} {percent(match.p)}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          {row.proposal.quote && <p className="proposal__quote">“{row.proposal.quote}”</p>}
-                          <p className="proposal__why">{row.proposal.rationale}</p>
-                          {row.proposal.verify && <p className="proposal__verify">Check first: {row.proposal.verify}</p>}
-                        </div>
+        {rows.length > 0 && (
+          <div>
+            <h2 className="section-title section-title--count">
+              Recommended gifts
+              <span>
+                {rows.length} of {readings?.length ?? "…"} read
+              </span>
+            </h2>
+            <ol className="proposals">
+              {rows.map((row) => {
+                const status = row.gift ? "paid" : row.proposal.status;
+                return (
+                  <li className="proposal" key={row.proposal.id} data-status={status}>
+                    <div>
+                      <span className="label">
+                        {stageLabel(row.pitch.stage)} · {row.pitch.author}, {row.pitch.location}
+                      </span>
+                      <h3>
+                        <Link href={`/p/${row.pitch.id}`} target="_blank">
+                          {row.pitch.title}
+                        </Link>
+                      </h3>
+                      <p className="proposal__pitch">{row.pitch.headline}</p>
+                      {row.proposal.matches && row.proposal.matches.length > 0 && (
+                        <ul className="matches" aria-label="Preferences this project met">
+                          {row.proposal.matches.map((match) => (
+                            <li key={match.label}>
+                              {match.label} {percent(match.p)}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {row.proposal.quote && <p className="proposal__quote">“{row.proposal.quote}”</p>}
+                      <p className="proposal__why">{row.proposal.rationale}</p>
+                      {row.proposal.verify && <p className="proposal__verify">Check first: {row.proposal.verify}</p>}
+                      {row.pitch.playUrl && (
+                        <p className="small">
+                          <a href={row.pitch.playUrl} target="_blank" rel="noopener noreferrer nofollow ugc">
+                            Play or watch it before you pay
+                          </a>
+                        </p>
+                      )}
+                    </div>
 
-                        <div className="proposal__act">
-                          <span className="proposal__amount">{money(row.proposal.amountUsd)}</span>
-                          {row.proposal.fit !== undefined && (
-                            <span className="small quiet figure">Fit {percent(row.proposal.fit)}</span>
+                    <div className="proposal__act">
+                      <span className="proposal__amount">{money(row.proposal.amountUsd)}</span>
+                      {row.proposal.fit !== undefined && (
+                        <span className="small quiet figure">Fit {percent(row.proposal.fit)}</span>
+                      )}
+                      {status === "paid" && row.gift && (
+                        <p className="notice notice--ok" role="status">
+                          Paid. Capture <span className="figure">{row.gift.captureId}</span>
+                        </p>
+                      )}
+                      {status === "skipped" && (
+                        <button
+                          type="button"
+                          className="linklike small"
+                          onClick={() => update(row.proposal.id, (r) => ({ ...r, proposal: { ...r.proposal, status: "proposed" } }))}
+                        >
+                          Skipped. Undo
+                        </button>
+                      )}
+                      {status === "proposed" && (
+                        <>
+                          {mandateId ? (
+                            <PayPalButton
+                              getOrderBody={() => ({ mandateId, proposalId: row.proposal.id })}
+                              onPaid={(gift) => update(row.proposal.id, { gift, problem: null })}
+                              onProblem={(problem) => update(row.proposal.id, { problem })}
+                            />
+                          ) : (
+                            <p className="small quiet">Waiting for the round to be recorded.</p>
                           )}
-                          {status === "paid" && row.gift && (
-                            <p className="notice notice--ok" role="status">
-                              Paid. Capture <span className="figure">{row.gift.captureId}</span>
+                          {row.problem && (
+                            <p className="notice notice--error" role="alert">
+                              {row.problem}
                             </p>
                           )}
-                          {status === "skipped" && (
-                            <button
-                              type="button"
-                              className="linklike small"
-                              onClick={() => update(row.proposal.id, (r) => ({ ...r, proposal: { ...r.proposal, status: "proposed" } }))}
-                            >
-                              Skipped. Undo
-                            </button>
-                          )}
-                          {status === "proposed" && (
-                            <>
-                              {mandateId ? (
-                                <PayPalButton
-                                  getOrderBody={() => ({ mandateId, proposalId: row.proposal.id })}
-                                  onPaid={(gift) => update(row.proposal.id, { gift, problem: null })}
-                                  onProblem={(problem) => update(row.proposal.id, { problem })}
-                                />
-                              ) : (
-                                <p className="small quiet">Waiting for the round to be recorded.</p>
-                              )}
-                              {row.problem && (
-                                <p className="notice notice--error" role="alert">
-                                  {row.problem}
-                                </p>
-                              )}
-                              <button
-                                type="button"
-                                className="linklike small"
-                                onClick={() => update(row.proposal.id, (r) => ({ ...r, proposal: { ...r.proposal, status: "skipped" } }))}
-                              >
-                                Skip this one
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-              </ol>
-            </div>
-          );
-        })}
+                          <button
+                            type="button"
+                            className="linklike small"
+                            onClick={() => update(row.proposal.id, (r) => ({ ...r, proposal: { ...r.proposal, status: "skipped" } }))}
+                          >
+                            Skip this one
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
 
         {toRead.length > 0 && (
           <div>
-            <h2 className="section-title">Worth reading yourself</h2>
+            <h2 className="section-title">Worth a look yourself</h2>
             <ul className="reads">
               {toRead.map((reading) => (
                 <li key={reading.pitch.id}>
                   <Link href={`/p/${reading.pitch.id}`} target="_blank">
-                    {reading.pitch.headline}
+                    {reading.pitch.title}
                   </Link>
                   <span className="small quiet">
                     {reading.pitch.author} · fit {percent(reading.fit)} ·{" "}

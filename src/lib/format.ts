@@ -14,7 +14,7 @@ export function shortDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-export const KIND_LABEL = { story: "Story", project: "Project", opinion: "Argument" } as const;
+
 
 /** Round to cents, the smallest unit PayPal accepts for USD. */
 export function cents(amount: number): number {

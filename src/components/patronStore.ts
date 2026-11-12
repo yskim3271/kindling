@@ -6,8 +6,8 @@ import { parsePreferences, type Preferences } from "@/lib/preferences";
  * last reading live in this browser's storage. Every call is guarded: storage
  * can be blocked or empty, and the pages must still work without it.
  */
-const PREFERENCES = "kindling.preferences.v1";
-const READINGS = "kindling.readings.v1";
+const PREFERENCES = "kindling.preferences.v2";
+const READINGS = "kindling.readings.v2";
 
 export function loadPreferences(): Preferences | null {
   try {
@@ -37,7 +37,7 @@ export function saveReadings(readings: ReadingResult[]): void {
   }
 }
 
-/** The fit from the patron's last reading, for letters that fit their preferences. */
+/** The fit from the patron's last reading, for projects that fit their preferences. */
 export function loadFit(pitchId: string): number | null {
   try {
     const raw = localStorage.getItem(READINGS);

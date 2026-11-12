@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 /**
- * Reads the letterbox against a patron's preferences and streams the progress
+ * Reads the open projects against a patron's preferences and streams the progress
  * as newline-delimited JSON.
  */
 export async function POST(req: Request) {

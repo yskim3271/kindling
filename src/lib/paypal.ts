@@ -12,7 +12,7 @@ export function paypalConfigured(): boolean {
   return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 }
 
-/** True when gifts should be routed straight to the writer's PayPal account. */
+/** True when gifts should be routed straight to the developer's PayPal account. */
 export function paysWriterDirectly(pitch: Pitch): boolean {
   return process.env.PAYPAL_PAYEE_MODE !== "platform" && Boolean(pitch.paypalEmail);
 }

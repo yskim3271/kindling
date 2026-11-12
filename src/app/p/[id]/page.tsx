@@ -2,19 +2,31 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GiftPanel } from "@/components/GiftPanel";
 import { InterestForm } from "@/components/InterestForm";
+import { MatchBadge } from "@/components/MatchBadge";
+import { Sigil } from "@/components/Sigil";
 import { countInterest, getPitch, listGifts } from "@/lib/db";
-import { cents, KIND_LABEL, longDate, money, shortDate } from "@/lib/format";
+import { cents, longDate, money, shortDate } from "@/lib/format";
 import { paysWriterDirectly } from "@/lib/paypal";
+import { stageLabel } from "@/lib/preferences";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const pitch = await getPitch(id);
-  return pitch ? { title: pitch.headline, description: pitch.summary } : { title: "Letter not found" };
+  return pitch ? { title: pitch.title, description: pitch.headline } : { title: "Game not found" };
 }
 
-export default async function LetterPage({ params }: Params) {
+/** The site a link points at, for showing beside it. */
+function host(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "link";
+  }
+}
+
+export default async function ProjectPage({ params }: Params) {
   const { id } = await params;
   const pitch = await getPitch(id);
   if (!pitch) notFound();
@@ -28,16 +40,45 @@ export default async function LetterPage({ params }: Params) {
   return (
     <div className="letter wrap">
       <article>
-        <span className="label">
-          {KIND_LABEL[pitch.kind]} · {longDate(pitch.createdAt)}
-          {pitch.sample && " · Sample letter, written for the demo"}
-        </span>
-        <h1>{pitch.headline}</h1>
-        <p className="letter__by">
-          {pitch.author}
-          {pitch.location && <span className="quiet">, {pitch.location}</span>}
+        <header className="project-head">
+          <Sigil id={pitch.id} className="project-head__cover" />
+          <div>
+            <MatchBadge pitchId={pitch.id} />
+            <span className="label">
+              {stageLabel(pitch.stage)} · {longDate(pitch.createdAt)}
+              {pitch.sample && " · Sample project, written for the demo"}
+            </span>
+            <h1>{pitch.title}</h1>
+            <p className="project-head__pitch">{pitch.headline}</p>
+            <p className="letter__by">
+              {pitch.author}
+              {pitch.location && <span className="quiet">, {pitch.location}</span>}
+            </p>
+          </div>
+        </header>
+
+        <p className="playlink">
+          {pitch.playUrl ? (
+            <>
+              <span className="label">Play or watch it</span>
+              {/* The link was typed by the developer: open it apart from this page and pass nothing along. */}
+              <a href={pitch.playUrl} target="_blank" rel="noopener noreferrer nofollow ugc">
+                {host(pitch.playUrl)}
+              </a>
+              <span className="small quiet">Posted by the developer. Kindling has not checked it.</span>
+            </>
+          ) : (
+            <>
+              <span className="label">Play or watch it</span>
+              <span className="small quiet">
+                No build is linked, because this is a sample project. A real one has to link a page where anyone can
+                play or watch the game.
+              </span>
+            </>
+          )}
         </p>
 
+        <h2>From the developer</h2>
         <div className="letter__body">
           {pitch.body.split(/\n{2,}/).map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
@@ -79,7 +120,7 @@ export default async function LetterPage({ params }: Params) {
                 <tr key={gift.id}>
                   <td>
                     {gift.patronName}
-                    {gift.source === "agent" && <span className="quiet"> · proposed by their agent</span>}
+                    {gift.source === "agent" && <span className="quiet"> · recommended by their agent</span>}
                     {gift.note && <span className="quiet"> · “{gift.note}”</span>}
                   </td>
                   <td className="num quiet">{shortDate(gift.capturedAt ?? gift.createdAt)}</td>
@@ -91,9 +132,9 @@ export default async function LetterPage({ params }: Params) {
         )}
       </article>
 
-      <aside className="give stack" aria-label="Give to this letter">
+      <aside className="give stack" aria-label="Give to this game">
         <div className="stack stack--tight">
-          <h2>Give to this letter</h2>
+          <h2>Give to this game</h2>
           <div>
             <span className="give__total">{money(pitch.raisedUsd)}</span>
             <span className="quiet"> of {money(pitch.askUsd)}</span>
@@ -108,6 +149,13 @@ export default async function LetterPage({ params }: Params) {
           >
             <span style={{ width: `${progress}%` }} />
           </div>
+          {pitch.genres.length > 0 && (
+            <ul className="tags">
+              {pitch.genres.map((genre) => (
+                <li key={genre}>{genre}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <GiftPanel

@@ -15,7 +15,7 @@ export function describeError(err: unknown): { message: string; status: number; 
       return { message: "PayPal declined that funding source. Pick another one and try again.", status: 422, issue: err.issue };
     }
     if (err.issue === "PAYEE_ACCOUNT_INVALID" || err.issue === "PAYEE_ACCOUNT_RESTRICTED") {
-      return { message: "The writer's PayPal address cannot receive payments. Nothing was charged.", status: 422, issue: err.issue };
+      return { message: "The developer's PayPal address cannot receive payments. Nothing was charged.", status: 422, issue: err.issue };
     }
     return { message: `PayPal: ${err.message}`, status: err.status >= 500 ? 502 : 422, issue: err.issue };
   }
@@ -27,7 +27,7 @@ export function describeError(err: unknown): { message: string; status: number; 
       return { message: "Jev is busy right now. Wait a moment and send the agent again.", status: 429 };
     }
     console.error(err);
-    return { message: "Jev could not read the letters just now. Nothing was proposed. Try again.", status: 502 };
+    return { message: "Jev could not read the projects just now. Nothing was recommended. Try again.", status: 502 };
   }
   if (err instanceof TypeError) {
     return { message: "A service this page depends on could not be reached. Check the network and try again.", status: 502 };

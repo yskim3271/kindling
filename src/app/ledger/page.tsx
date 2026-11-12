@@ -15,7 +15,7 @@ export default async function LedgerPage() {
       <header className="page-head">
         <h1>Every gift, in the open</h1>
         <p>
-          Each line is a PayPal payment that completed. The capture ID is PayPal’s own receipt number; the writer and the
+          Each line is a PayPal payment that completed. The capture ID is PayPal’s own receipt number; the developer and the
           patron can both look it up in their accounts.
         </p>
       </header>
@@ -23,7 +23,7 @@ export default async function LedgerPage() {
       <div className="page-body">
         {gifts.length === 0 ? (
           <p className="empty" style={{ paddingBlock: 0 }}>
-            The ledger is empty. <Link href="/">Read the letters</Link> and be the first line in it.
+            The ledger is empty. <Link href="/">Look through the games</Link> and be the first line in it.
           </p>
         ) : (
           <div className="ledger__scroll">
@@ -50,8 +50,17 @@ export default async function LedgerPage() {
                         {gift.patronName}
                         {gift.source === "agent" && <span className="quiet"> · via agent</span>}
                       </td>
-                      <td>{pitch ? <Link href={`/p/${pitch.id}`}>{pitch.author}</Link> : "Removed letter"}</td>
-                      <td className="quiet">{gift.payee === "writer" ? "Writer’s PayPal" : "Demo account"}</td>
+                      <td>
+                        {pitch ? (
+                          <>
+                            <Link href={`/p/${pitch.id}`}>{pitch.title}</Link>
+                            <span className="quiet"> · {pitch.author}</span>
+                          </>
+                        ) : (
+                          <span className="quiet">A letter from before Kindling narrowed to games</span>
+                        )}
+                      </td>
+                      <td className="quiet">{gift.payee === "writer" ? "Developer’s PayPal" : "Demo account"}</td>
                       <td className="figure small">{gift.captureId}</td>
                       <td className="num">{money(gift.amountUsd)}</td>
                     </tr>

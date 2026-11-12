@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { loadFit } from "./patronStore";
 
-/** Marks a letter that fit the patron's saved preferences the last time their agent read the letterbox. */
+/** Marks a project that fit the patron's saved preferences the last time their agent read the board. */
 export function MatchBadge({ pitchId }: { pitchId: string }) {
   const [fit, setFit] = useState<number | null>(null);
 

@@ -3,6 +3,7 @@
  * pre-emit critique: P4 H4 E4 S5 R5 V4
  */
 @import "./tokens.css";
+@import "./themes.css";
 
 *,
 *::before,
@@ -464,57 +465,90 @@ a:hover {
   white-space: nowrap;
 }
 
-.letters {
+.games {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.letter-row {
+.game {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  grid-template-columns: 6.5rem minmax(0, 7fr) minmax(0, 3fr);
   gap: var(--space-lg) var(--space-2xl);
   padding-block: var(--space-xl);
   border-bottom: var(--rule-hair) solid var(--color-rule);
 }
 
-.letter-row:first-child {
+.game:first-child {
   padding-block: var(--space-2xl);
 }
 
-.letter-row h2 {
+.game h2 {
   margin-top: var(--space-xs);
   font-size: var(--text-2xl);
   max-width: 26ch;
 }
 
-.letter-row:first-child h2 {
+.game:first-child h2 {
   font-size: var(--text-3xl);
   letter-spacing: -0.025em;
   max-width: 22ch;
 }
 
-.letter-row h2 a {
+.game h2 a {
   text-decoration: none;
 }
 
-.letter-row h2 a:hover {
+.game h2 a:hover {
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
 
-.letter-row__summary {
+.game__cover {
+  position: relative;
+  display: block;
+  align-self: start;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+/* The emblem fills whatever shape the theme gives the cover. */
+.game__cover .sigil {
+  position: absolute;
+  inset: 0;
+}
+
+.sigil {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: oklch(var(--sigil-bg-l) var(--sigil-bg-c) var(--sigil-h));
+}
+
+.sigil rect {
+  fill: oklch(var(--sigil-fg-l) var(--sigil-fg-c) var(--sigil-h));
+}
+
+.game__pitch {
+  margin-top: var(--space-2xs);
+  max-width: 44ch;
+  font-size: var(--text-lg);
+  line-height: 1.35;
+}
+
+.game__summary {
   margin-top: var(--space-sm);
   max-width: var(--measure);
   color: var(--color-muted);
 }
 
-.letter-row__by {
+.game__by {
   margin-top: var(--space-sm);
   font-size: var(--text-sm);
 }
 
-.letter-row__side {
+.game__side {
   align-self: start;
   display: grid;
   gap: var(--space-xs);
@@ -564,7 +598,53 @@ a:hover {
   max-width: 48ch;
 }
 
-/* ---- letter page -------------------------------------------------------- */
+/* ---- project page ------------------------------------------------------- */
+
+.project-head {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.project-head .letter__by {
+  margin-top: var(--space-sm);
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.letter h2 + .letter__body {
+  margin-top: var(--space-md);
+}
+
+.project-head__cover {
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.project-head__pitch {
+  margin-top: var(--space-xs);
+  max-width: 40ch;
+  font-size: var(--text-lg);
+  line-height: 1.35;
+}
+
+.playlink {
+  display: grid;
+  gap: var(--space-2xs);
+  margin-top: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-0);
+}
+
+.playlink a {
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
 
 .letter {
   display: grid;
@@ -1021,6 +1101,12 @@ a:hover {
   text-decoration: underline;
 }
 
+.proposal__pitch {
+  margin-top: var(--space-2xs);
+  max-width: 56ch;
+  color: var(--color-muted);
+}
+
 .proposal__quote {
   margin-top: var(--space-xs);
   max-width: 56ch;
@@ -1149,9 +1235,22 @@ a:hover {
     padding-block: var(--space-xl) var(--space-lg);
   }
 
-  .letter-row,
+  .game,
   .proposal {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+  }
+
+  .game {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+
+  .game__side {
+    grid-column: 1 / -1;
+  }
+
+  .project-head {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
     gap: var(--space-md);
   }
   .give {
@@ -1195,4 +1294,36 @@ a:hover {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
+}
+
+/* ---- theme proposal switcher (temporary) --------------------------------- */
+
+.themebar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-md);
+  z-index: 20;
+  display: flex;
+  max-width: calc(100vw - 2 * var(--space-md));
+  overflow-x: auto;
+  translate: -50% 0;
+  border: var(--rule-hair) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-0);
+}
+
+.themebar button {
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.themebar button[aria-pressed="true"] {
+  background: var(--color-ink);
+  color: var(--color-paper);
 }

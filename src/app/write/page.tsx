@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { WriteForm } from "@/components/WriteForm";
 
-export const metadata: Metadata = { title: "Write a letter" };
+export const metadata: Metadata = { title: "Post your game" };
 
 export default function WritePage() {
   return (
     <div className="desk desk--write wrap">
       <div className="stack">
         <div>
-          <h1>Write it in your own words.</h1>
+          <h1>Post your game, in your own words.</h1>
           <p className="desk__deck">
-            A letter here is written by the person asking. Nothing drafts it, polishes it or translates it for you, and
-            that is the point: a patron is reading you, not a machine’s idea of you.
+            Say what the game is, what you have built, and the specific things it still needs. Nothing drafts the
+            letter, polishes it or translates it for you, and that is the point: a patron is reading the person making
+            the game, not a machine’s idea of them.
           </p>
         </div>
         <WriteForm />
@@ -20,9 +21,10 @@ export default function WritePage() {
       <aside className="desk__aside">
         <h2>What a careful patron looks for</h2>
         <ul>
+          <li>Something to play or watch. A link to a build tells them more than any description.</li>
+          <li>What exists today, kept apart from what you plan to make.</li>
           <li>What the money buys, item by item, with a price on each.</li>
-          <li>Someone or something that can confirm your account: a supervisor, a school, a client, a record.</li>
-          <li>What changes once it is paid for, and by when you need it.</li>
+          <li>Small asks. A patron can finish a $400 item today; a $40,000 budget needs a publisher.</li>
         </ul>
       </aside>
     </div>

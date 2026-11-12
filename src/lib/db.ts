@@ -9,8 +9,15 @@ import type { Gift, Interest, Mandate, Pitch, Proposal } from "./types";
  *
  * Every record is one row: (kind, id, json). Records that different requests
  * may write at the same moment are separate rows, and the one running total
- * (a letter's raised amount) is changed with a single atomic statement.
+ * (a project's raised amount) is changed with a single atomic statement.
  */
+
+/**
+ * Marks that the sample game projects have been added. Stores that were first
+ * filled before Kindling narrowed to games get the samples once, on top of
+ * what they hold; nothing already stored is deleted.
+ */
+const SEED_MARK = "seeded:games";
 
 type Kind = "pitch" | "gift" | "mandate" | "proposal" | "interest" | "counter";
 
@@ -52,12 +59,12 @@ async function d1Backend(db: D1Database): Promise<Backend> {
         "CREATE TABLE IF NOT EXISTS docs (kind TEXT NOT NULL, id TEXT NOT NULL, json TEXT NOT NULL, PRIMARY KEY (kind, id))",
       )
       .run();
-    const seeded = await db.prepare("SELECT 1 AS yes FROM docs WHERE kind = 'counter' AND id = 'seeded'").first();
+    const seeded = await db.prepare("SELECT 1 AS yes FROM docs WHERE kind = 'counter' AND id = ?1").bind(SEED_MARK).first();
     if (!seeded) {
       const insert = "INSERT OR IGNORE INTO docs (kind, id, json) VALUES (?1, ?2, ?3)";
       await db.batch([
         ...seedPitches().map((p) => db.prepare(insert).bind("pitch", p.id, JSON.stringify(p))),
-        db.prepare(insert).bind("counter", "seeded", JSON.stringify({ n: 1 })),
+        db.prepare(insert).bind("counter", SEED_MARK, JSON.stringify({ n: 1 })),
       ]);
     }
     d1Ready = true;
@@ -109,13 +116,18 @@ async function fileBackend(): Promise<Backend> {
   const file = path.join(dir, "db.json");
 
   const load = (): FileShape => {
+    let data: FileShape;
     try {
-      return JSON.parse(fs.readFileSync(file, "utf8")) as FileShape;
+      data = JSON.parse(fs.readFileSync(file, "utf8")) as FileShape;
     } catch {
-      const fresh: FileShape = { pitch: Object.fromEntries(seedPitches().map((p) => [p.id, p])) };
-      save(fresh);
-      return fresh;
+      data = {};
     }
+    if (!data.counter?.[SEED_MARK]) {
+      data.pitch = { ...Object.fromEntries(seedPitches().map((p) => [p.id, p])), ...data.pitch };
+      (data.counter ??= {})[SEED_MARK] = { n: 1 };
+      save(data);
+    }
+    return data;
   };
   const save = (data: FileShape) => {
     fs.mkdirSync(dir, { recursive: true });
@@ -156,14 +168,23 @@ const newestFirst = <T extends { createdAt: string }>(items: T[]) =>
 
 export const newId = (prefix: string) => `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
-// --- letters -----------------------------------------------------------------
+// --- projects ----------------------------------------------------------------
+
+/**
+ * Records posted before Kindling narrowed to games have no title or stage.
+ * They stay in storage, so old ledger lines keep their history, but they are
+ * no longer listed, opened or funded.
+ */
+const isGame = (pitch: Pitch | undefined): pitch is Pitch =>
+  typeof pitch?.title === "string" && typeof pitch.stage === "string";
 
 export async function listPitches(): Promise<Pitch[]> {
-  return newestFirst(await (await store()).list<Pitch>("pitch"));
+  return newestFirst((await (await store()).list<Pitch>("pitch")).filter(isGame));
 }
 
 export async function getPitch(id: string): Promise<Pitch | undefined> {
-  return (await store()).get<Pitch>("pitch", id);
+  const pitch = await (await store()).get<Pitch>("pitch", id);
+  return isGame(pitch) ? pitch : undefined;
 }
 
 export async function addPitch(pitch: Pitch): Promise<void> {
@@ -194,7 +215,7 @@ export async function patchGift(id: string, patch: Partial<Gift>): Promise<Gift 
 }
 
 /**
- * Mark a gift captured, credit the letter, and settle the agent proposal it
+ * Mark a gift captured, credit the project, and settle the agent proposal it
  * came from. A second call for an already-captured gift changes nothing.
  */
 export async function settleGift(id: string, captureId: string): Promise<Gift | undefined> {

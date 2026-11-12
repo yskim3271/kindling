@@ -1,21 +1,15 @@
 import Link from "next/link";
 import { MatchBadge } from "@/components/MatchBadge";
+import { Sigil } from "@/components/Sigil";
 import { listGifts, listPitches } from "@/lib/db";
-import { KIND_LABEL, money, shortDate } from "@/lib/format";
-import type { PitchKind } from "@/lib/types";
+import { money, shortDate } from "@/lib/format";
+import { STAGES, stageLabel } from "@/lib/preferences";
 
-const FILTERS: { kind?: PitchKind; label: string }[] = [
-  { label: "All letters" },
-  { kind: "story", label: "Stories" },
-  { kind: "project", label: "Projects" },
-  { kind: "opinion", label: "Arguments" },
-];
-
-export default async function FrontPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
-  const { kind } = await searchParams;
+export default async function FrontPage({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
+  const { stage } = await searchParams;
   const all = await listPitches();
-  const active = FILTERS.find((f) => f.kind === kind)?.kind;
-  const letters = active ? all.filter((p) => p.kind === active) : all;
+  const active = STAGES.find((s) => s.id === stage)?.id;
+  const games = active ? all.filter((p) => p.stage === active) : all;
 
   const captured = (await listGifts()).filter((g) => g.status === "captured");
   const given = captured.reduce((sum, g) => sum + g.amountUsd, 0);
@@ -25,18 +19,18 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
     <div className="wrap">
       <section className="lede">
         <div>
-          <h1>Write to the people who can help.</h1>
+          <h1>Fund the missing piece of a small game.</h1>
           <p className="lede__deck">
-            Kindling is a public letterbox. Anyone can post a story, a project or an argument and say what it would
-            cost. Patrons read, and pay through PayPal: by hand, or by saying once what they want to back and letting
-            an agent recommend letters. Nothing is spent without the patron’s own approval.
+            Independent developers post a game in progress and the specific things it still needs: a composer, a store
+            fee, a test device. Patrons pay for them through PayPal, by hand or on the recommendation of an agent that
+            reads every project against their saved preferences. Nothing is spent without the patron’s own approval.
           </p>
           <div className="lede__actions">
-            <Link href="/write" className="btn">
-              Write a letter
-            </Link>
-            <Link href="/patron" className="btn btn--quiet">
+            <Link href="/patron" className="btn">
               Set your preferences
+            </Link>
+            <Link href="/write" className="btn btn--quiet">
+              Post your game
             </Link>
           </div>
         </div>
@@ -45,7 +39,7 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
           <span className="label">The till, counted live</span>
           <dl>
             <div>
-              <dt>Letters posted</dt>
+              <dt>Games posted</dt>
               <dd className="figure">{all.length}</dd>
             </div>
             <div>
@@ -64,50 +58,58 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
         </aside>
       </section>
 
-      <nav className="sorter" aria-label="Filter letters">
-        {FILTERS.map((filter) => (
+      <nav className="sorter" aria-label="Filter games by stage">
+        <Link href="/" aria-current={active ? undefined : "true"} scroll={false}>
+          All games
+        </Link>
+        {STAGES.map((option) => (
           <Link
-            key={filter.label}
-            href={filter.kind ? `/?kind=${filter.kind}` : "/"}
-            aria-current={filter.kind === active ? "true" : undefined}
+            key={option.id}
+            href={`/?stage=${option.id}`}
+            aria-current={option.id === active ? "true" : undefined}
             scroll={false}
           >
-            {filter.label}
+            {option.label}
           </Link>
         ))}
         <span className="sorter__count">
-          {letters.length} {letters.length === 1 ? "letter" : "letters"}
+          {games.length} {games.length === 1 ? "game" : "games"}
         </span>
       </nav>
 
-      {letters.length === 0 ? (
+      {games.length === 0 ? (
         <p className="empty">
-          Nothing filed under this heading yet. <Link href="/write">Write the first one.</Link>
+          No game at this stage yet. <Link href="/write">Post the first one.</Link>
         </p>
       ) : (
-        <ol className="letters">
-          {letters.map((pitch) => {
+        <ol className="games">
+          {games.map((pitch) => {
             const progress = Math.min(100, Math.round((pitch.raisedUsd / pitch.askUsd) * 100));
             return (
-              <li className="letter-row" key={pitch.id}>
-                <article>
+              <li className="game" key={pitch.id}>
+                <Link href={`/p/${pitch.id}`} className="game__cover" tabIndex={-1} aria-hidden="true">
+                  <Sigil id={pitch.id} />
+                </Link>
+
+                <article className="game__main">
                   <MatchBadge pitchId={pitch.id} />
                   <span className="label">
-                    {KIND_LABEL[pitch.kind]}
-                    {pitch.location && ` · ${pitch.location}`} · {shortDate(pitch.createdAt)}
+                    {stageLabel(pitch.stage)} · {shortDate(pitch.createdAt)}
                     {pitch.sample && " · Sample"}
                   </span>
                   <h2>
-                    <Link href={`/p/${pitch.id}`}>{pitch.headline}</Link>
+                    <Link href={`/p/${pitch.id}`}>{pitch.title}</Link>
                   </h2>
-                  <p className="letter-row__summary">{pitch.summary}</p>
-                  <p className="letter-row__by">
+                  <p className="game__pitch">{pitch.headline}</p>
+                  <p className="game__summary">{pitch.summary}</p>
+                  <p className="game__by">
                     {pitch.author}
+                    {pitch.location && <span className="quiet">, {pitch.location}</span>}
                     {pitch.openToInvestment && <span className="quiet"> · open to investment</span>}
                   </p>
                 </article>
 
-                <div className="letter-row__side">
+                <div className="game__side">
                   <div className="amounts">
                     <strong>{money(pitch.askUsd)}</strong>
                     <span className="small quiet">asked</span>
@@ -126,8 +128,8 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
                     {pitch.raisedUsd > 0 ? `${money(pitch.raisedUsd)} given` : "Nothing given yet"}
                   </span>
                   <ul className="tags">
-                    {pitch.tags.map((tag) => (
-                      <li key={tag}>{tag}</li>
+                    {pitch.genres.map((genre) => (
+                      <li key={genre}>{genre}</li>
                     ))}
                   </ul>
                 </div>
