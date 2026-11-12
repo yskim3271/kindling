@@ -1,30 +1,30 @@
-/* Hallmark · tokens · theme: custom (vibe: "letterbox, ledger paper, counting-house green")
- * paper oklch(96.5% 0.012 85) · accent oklch(42% 0.09 165) ledger-green
- * display Bricolage Grotesque · body Newsreader · figures IBM Plex Mono
- * axes: light / grotesk-sans / chromatic-other
+/* Hallmark · tokens · theme: custom "jam"
+ * Drawn from the light, friendly end of game sites (itch.io, Tumblbug, Playdate): a pale ground,
+ * one warm red, round shapes. Ground and ink share hue 285; the accent is coral, hue 22.
+ * display Rubik · body Atkinson Hyperlegible · figures Atkinson Hyperlegible Mono
  */
 :root {
-  /* colour: warm paper, warm ink, one green */
-  --color-paper-0: oklch(98.5% 0.008 85);
-  --color-paper: oklch(96.5% 0.012 85);
-  --color-paper-2: oklch(93.5% 0.015 85);
-  --color-paper-3: oklch(90% 0.017 85);
-  --color-rule: oklch(82% 0.014 80);
-  --color-rule-strong: oklch(62% 0.014 78);
-  --color-neutral: oklch(48% 0.012 75);
-  --color-muted: oklch(38% 0.012 70);
-  --color-ink: oklch(19% 0.012 60);
-  --color-accent: oklch(42% 0.09 165);
-  --color-accent-deep: oklch(33% 0.075 165);
-  --color-accent-wash: oklch(92% 0.03 165);
-  --color-danger: oklch(46% 0.17 30);
-  --color-danger-wash: oklch(93% 0.03 30);
-  --color-focus: oklch(42% 0.09 165);
+  /* colour: pale lilac ground, near-black ink of the same hue, one coral */
+  --color-paper-0: oklch(99.5% 0.004 285);
+  --color-paper: oklch(95% 0.025 285);
+  --color-paper-2: oklch(92% 0.03 285);
+  --color-paper-3: oklch(88% 0.035 285);
+  --color-rule: oklch(80% 0.035 285);
+  --color-rule-strong: oklch(22% 0.02 285);
+  --color-neutral: oklch(42% 0.03 285);
+  --color-muted: oklch(34% 0.03 285);
+  --color-ink: oklch(22% 0.02 285);
+  --color-accent: oklch(55% 0.21 22);
+  --color-accent-deep: oklch(42% 0.17 22);
+  --color-accent-wash: oklch(91% 0.06 22);
+  --color-danger: oklch(46% 0.19 12);
+  --color-danger-wash: oklch(92% 0.04 12);
+  --color-focus: oklch(46% 0.2 265);
 
   /* type */
-  --font-display: var(--ff-display), "Arial Narrow", "Helvetica Neue", sans-serif;
-  --font-body: var(--ff-body), "Iowan Old Style", Georgia, serif;
-  --font-mono: var(--ff-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-display: var(--ff-display), "Arial Rounded MT Bold", "Helvetica Neue", sans-serif;
+  --font-body: var(--ff-body), Verdana, sans-serif;
+  --font-mono: var(--ff-mono), ui-monospace, Menlo, monospace;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -55,15 +55,21 @@
   --page: 74rem;
 
   /* line and corner */
-  --rule-hair: 1px;
-  --rule-heavy: 3px;
-  --radius-sm: 2px;
+  --rule-hair: 2px;
+  --rule-heavy: 4px;
+  --radius-sm: 10px;
+  --radius-lg: 14px;
+
+  /* the hard shadow every raised thing shares, and its pressed and small forms */
+  --shadow-hard: 4px 4px 0 var(--color-ink);
+  --shadow-hard-sm: 3px 3px 0 var(--color-ink);
+  --shadow-pressed: 1px 1px 0 var(--color-ink);
 
   /* generated emblems: the hue comes from the project, the rest from the theme */
-  --sigil-bg-l: 88%;
-  --sigil-bg-c: 0.05;
-  --sigil-fg-l: 36%;
-  --sigil-fg-c: 0.1;
+  --sigil-bg-l: 87%;
+  --sigil-bg-c: 0.11;
+  --sigil-fg-l: 30%;
+  --sigil-fg-c: 0.13;
 
   /* motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

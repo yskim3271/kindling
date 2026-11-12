@@ -101,7 +101,6 @@ export default async function FrontPage({ searchParams }: { searchParams: Promis
                     <Link href={`/p/${pitch.id}`}>{pitch.title}</Link>
                   </h2>
                   <p className="game__pitch">{pitch.headline}</p>
-                  <p className="game__summary">{pitch.summary}</p>
                   <p className="game__by">
                     {pitch.author}
                     {pitch.location && <span className="quiet">, {pitch.location}</span>}
